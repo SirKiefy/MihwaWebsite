@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Mihwa · 미화</title>
+  <meta name="description" content="An ink-painted, interactive 3D gift for Mihwa: Korean ink landscapes, the moon over Seoul and Paris, a globe of international relations, and the Four Gentlemen.">
+  <meta name="theme-color" content="#f2ebdd">
+  <meta property="og:title" content="Mihwa · 미화">
+  <meta property="og:description" content="Between Seoul and Paris, between ink and the wide world.">
+  <link rel="icon" href="assets/seal.svg" type="image/svg+xml">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=Gowun+Batang:wght@400;700&family=Nanum+Brush+Script&family=Noto+Serif+KR:wght@500;700;900&display=swap">
+  <link rel="stylesheet" href="css/style.css">
+
+  <script type="importmap">
+    { "imports": { "three": "./vendor/three/three.module.min.js" } }
+  </script>
+</head>
+<body>
+  <svg class="defs" width="0" height="0" aria-hidden="true" style="position:absolute">
+    <defs>
+      <!-- Rough, slightly eroded edges for cinnabar seals (낙관) -->
+      <filter id="seal-rough" x="-10%" y="-10%" width="120%" height="120%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="2" seed="3" result="n1"/>
+        <feDisplacementMap in="SourceGraphic" in2="n1" scale="2.4" xChannelSelector="R" yChannelSelector="G" result="d"/>
+        <feTurbulence type="fractalNoise" baseFrequency="0.42" numOctaves="3" seed="11" result="n2"/>
+        <feColorMatrix in="n2" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  3.2 0 0 0 -0.95" result="speck"/>
+        <feComposite in="d" in2="speck" operator="in"/>
+      </filter>
+    </defs>
+  </svg>
+
+  <!-- ─────────────────────────── Loader ─────────────────────────── -->
+  <div id="loader" aria-live="polite">
+    <div class="loader-drop">
+      <span class="ripple"></span><span class="ripple"></span><span class="ripple"></span>
+      <span class="drop"></span>
+    </div>
+    <p class="loader-text" data-i18n="loader">Grinding the ink…</p>
+  </div>
+
+  <canvas id="webgl" aria-hidden="true"></canvas>
+  <div class="vignette" aria-hidden="true"></div>
+  <div class="grain" aria-hidden="true"></div>
+
+  <!-- ─────────────────────────── Navigation ─────────────────────────── -->
+  <header class="topbar">
+    <a class="brand" href="#hero" aria-label="Mihwa — back to top">
+      <span class="seal seal--sm" aria-hidden="true"><span>美</span><span>花</span></span>
+      <span class="brand-text"><span class="ko">미화</span><span class="dot">·</span><em>Mihwa</em></span>
+    </a>
+    <div class="controls">
+      <div class="lang" role="group" aria-label="Language">
+        <button type="button" data-lang="en" aria-pressed="true">EN</button>
+        <button type="button" data-lang="fr" aria-pressed="false">FR</button>
+        <button type="button" data-lang="ko" aria-pressed="false">한</button>
+      </div>
+      <button type="button" class="sound" aria-pressed="false" aria-label="Sound" data-i18n-title="sound">
+        <svg viewBox="0 0 32 32" aria-hidden="true"><path class="string" d="M4 10 Q16 6 28 10"/><path class="string" d="M4 16 Q16 12 28 16"/><path class="string" d="M4 22 Q16 18 28 22"/><circle cx="11" cy="9" r="1.6"/><circle cx="19" cy="15" r="1.6"/><circle cx="14" cy="21" r="1.6"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <nav class="rail" aria-label="Sections">
+    <div class="rail-ink"><span></span></div>
+    <ol>
+      <li><a href="#hero" data-i18n-label="nav.hero"><span class="rail-dot"></span><span class="rail-label" data-i18n="nav.hero">Mountains</span></a></li>
+      <li><a href="#moon"><span class="rail-dot"></span><span class="rail-label" data-i18n="nav.moon">The moon</span></a></li>
+      <li><a href="#world"><span class="rail-dot"></span><span class="rail-label" data-i18n="nav.world">The world</span></a></li>
+      <li><a href="#ties"><span class="rail-dot"></span><span class="rail-label" data-i18n="nav.ties">140 years</span></a></li>
+      <li><a href="#gentlemen"><span class="rail-dot"></span><span class="rail-label" data-i18n="nav.gentlemen">Four Gentlemen</span></a></li>
+      <li><a href="#studio"><span class="rail-dot"></span><span class="rail-label" data-i18n="nav.studio">Paint</span></a></li>
+      <li><a href="#letter"><span class="rail-dot"></span><span class="rail-label" data-i18n="nav.letter">Letter</span></a></li>
+    </ol>
+  </nav>
+
+  <main>
+    <!-- ─────────────────────────── I. Hero ─────────────────────────── -->
+    <section id="hero" class="scene scene--hero" data-scene="hero">
+      <div class="hero-inner">
+        <p class="eyebrow reveal" data-i18n="hero.eyebrow">A small gift, painted in ink</p>
+        <h1 class="hero-title">
+          <span class="hero-ko" aria-hidden="true"><span>미</span><span>화</span></span>
+          <span class="hero-latin">Mihwa</span>
+          <span class="hero-hanja" aria-hidden="true">美花</span>
+        </h1>
+        <p class="hero-sub reveal" data-i18n="hero.sub">Between Seoul and Paris, between ink and the wide world.</p>
+      </div>
+      <p class="hero-hint" data-i18n="hero.hint">Click the mountains to scatter blossoms · scroll to begin</p>
+      <div class="scroll-cue" aria-hidden="true"><span></span></div>
+      <p class="plate" data-i18n="hero.plate">Sansuhwa — a landscape after the “true-view” style of Jeong Seon (1676–1759)</p>
+    </section>
+
+    <!-- ─────────────────────────── II. Moon ─────────────────────────── -->
+    <section id="moon" class="scene scene--moon" data-scene="moon">
+      <div class="panel panel--left reveal">
+        <p class="kicker"><span class="seal seal--xs" aria-hidden="true">月</span><span data-i18n="moon.kicker">I · 같은 달 아래</span></p>
+        <h2 data-i18n="moon.title">Under the same moon</h2>
+        <p class="lede" data-i18n-html="moon.body">Korean painters had a way of drawing the moon without drawing it at all…</p>
+        <div class="clocks" aria-live="off">
+          <div class="clock">
+            <span class="clock-city" data-i18n="moon.seoul">Seoul</span>
+            <span class="clock-time" id="clock-seoul">--:--</span>
+            <span class="clock-date" id="date-seoul"></span>
+          </div>
+          <div class="clock-thread" aria-hidden="true">
+            <svg viewBox="0 0 200 40" preserveAspectRatio="none"><path d="M2 30 C 60 -6, 140 -6, 198 30"/></svg>
+            <span class="clock-dist" id="clock-dist">8,960 km</span>
+          </div>
+          <div class="clock">
+            <span class="clock-city" data-i18n="moon.paris">Paris</span>
+            <span class="clock-time" id="clock-paris">--:--</span>
+            <span class="clock-date" id="date-paris"></span>
+          </div>
+        </div>
+        <p class="clock-note" id="clock-note"></p>
+      </div>
+    </section>
+
+    <!-- ─────────────────────────── III. World ─────────────────────────── -->
+    <section id="world" class="scene scene--world" data-scene="world" data-hold="0.22,0.8">
+      <div class="sticky">
+        <div class="world-layout">
+          <div class="panel panel--world">
+            <p class="kicker"><span class="seal seal--xs" aria-hidden="true">界</span><span data-i18n="world.kicker">II · 세계</span></p>
+            <h2 data-i18n="world.title">A world to understand</h2>
+            <p class="lede" data-i18n="world.body">International relations is the art of reading the lines between places…</p>
+            <ul class="places" id="places" aria-label="Places"></ul>
+          </div>
+          <div class="globe-hit" id="globe-hit" aria-hidden="true"></div>
+          <article class="place-card" id="place-card" aria-live="polite" hidden>
+            <button type="button" class="place-close" aria-label="Close" id="place-close">×</button>
+            <p class="place-ko" id="pc-ko"></p>
+            <h3 id="pc-name"></h3>
+            <p class="place-inst" id="pc-inst"></p>
+            <p class="place-desc" id="pc-desc"></p>
+            <dl class="place-dist">
+              <div><dt data-i18n="world.fromSeoul">from Seoul</dt><dd id="pc-seoul"></dd></div>
+              <div><dt data-i18n="world.fromParis">from Paris</dt><dd id="pc-paris"></dd></div>
+              <div><dt data-i18n="world.coords">coordinates</dt><dd id="pc-coords"></dd></div>
+            </dl>
+          </article>
+          <div class="globe-labels" id="globe-labels" aria-hidden="true"></div>
+          <p class="globe-hint" data-i18n="world.hint">drag to turn the world</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- lexicon ribbon -->
+    <section id="lexicon" class="paper paper--lexicon" data-scene="lexicon">
+      <div class="lexicon-head">
+        <p class="kicker"><span class="seal seal--xs" aria-hidden="true">言</span><span data-i18n="lex.kicker">Words of diplomacy</span></p>
+        <p class="lexicon-sub" data-i18n="lex.sub">Hover a word to see its hanja — the Sino-Korean roots hiding inside everyday Korean.</p>
+      </div>
+      <ul class="lexicon" id="lexicon-list"></ul>
+    </section>
+
+    <!-- ─────────────────────────── IV. Ties (handscroll) ─────────────────────────── -->
+    <section id="ties" class="paper paper--ties" data-scene="ties">
+      <div class="sticky">
+        <div class="ties-head">
+          <p class="kicker"><span class="seal seal--xs" aria-hidden="true">韓</span><span class="seal seal--xs seal--blue" aria-hidden="true">佛</span><span data-i18n="ties.kicker">III · 한불 140년</span></p>
+          <h2 data-i18n="ties.title">140 years of a friendship</h2>
+          <p class="lede" data-i18n="ties.body">France and Korea signed their first treaty in 1886. Keep scrolling to unroll the story.</p>
+        </div>
+        <div class="handscroll">
+          <div class="roller roller--left" aria-hidden="true"></div>
+          <div class="scroll-window">
+            <div class="scroll-track" id="scroll-track">
+              <canvas class="scroll-painting" id="scroll-painting" aria-hidden="true"></canvas>
+              <ol class="events" id="events"></ol>
+            </div>
+          </div>
+          <div class="roller roller--right" aria-hidden="true"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────────────────────────── V. Four Gentlemen ─────────────────────────── -->
+    <section id="gentlemen" class="paper paper--gentlemen" data-scene="gentlemen">
+      <div class="section-head">
+        <p class="kicker"><span class="seal seal--xs" aria-hidden="true">君</span><span data-i18n="gent.kicker">IV · 사군자</span></p>
+        <h2 data-i18n="gent.title">The Four Gentlemen</h2>
+        <p class="lede" data-i18n="gent.body">Plum, orchid, chrysanthemum, bamboo…</p>
+      </div>
+      <div class="scrolls" id="scrolls"></div>
+    </section>
+
+    <!-- ─────────────────────────── VI. Studio ─────────────────────────── -->
+    <section id="studio" class="paper paper--studio" data-scene="studio">
+      <div class="section-head section-head--row">
+        <div>
+          <p class="kicker"><span class="seal seal--xs" aria-hidden="true">白</span><span data-i18n="studio.kicker">V · 여백의 미</span></p>
+          <h2 data-i18n="studio.title">The beauty of empty space</h2>
+        </div>
+        <p class="lede" data-i18n="studio.body">In Korean painting, what you leave unpainted matters as much as what you paint…</p>
+      </div>
+      <div class="studio">
+        <div class="studio-tools" role="toolbar" aria-label="Painting tools">
+          <div class="tool-group" role="radiogroup" aria-label="Ink">
+            <button type="button" class="tool tool--ink is-active" data-tool="ink" data-tone="0.95" role="radio" aria-checked="true"><span class="swatch" style="--tone:.95"></span><span class="tool-ko">농묵</span><span class="tool-label" data-i18n="studio.dark">Dark ink</span></button>
+            <button type="button" class="tool tool--ink" data-tool="ink" data-tone="0.55" role="radio" aria-checked="false"><span class="swatch" style="--tone:.55"></span><span class="tool-ko">중묵</span><span class="tool-label" data-i18n="studio.mid">Mid ink</span></button>
+            <button type="button" class="tool tool--ink" data-tool="ink" data-tone="0.25" role="radio" aria-checked="false"><span class="swatch" style="--tone:.25"></span><span class="tool-ko">담묵</span><span class="tool-label" data-i18n="studio.pale">Pale ink</span></button>
+            <button type="button" class="tool" data-tool="blossom" role="radio" aria-checked="false"><span class="swatch swatch--blossom"></span><span class="tool-ko">매화</span><span class="tool-label" data-i18n="studio.blossom">Blossom</span></button>
+            <button type="button" class="tool" data-tool="seal" role="radio" aria-checked="false"><span class="swatch swatch--seal"></span><span class="tool-ko">낙관</span><span class="tool-label" data-i18n="studio.seal">Seal</span></button>
+          </div>
+          <label class="size">
+            <span class="tool-ko">붓</span><span class="tool-label" data-i18n="studio.size">Brush</span>
+            <input type="range" id="brush-size" min="4" max="60" value="22">
+          </label>
+          <div class="tool-group tool-group--actions">
+            <button type="button" class="tool tool--action" id="studio-clear"><span class="tool-ko">씻기</span><span class="tool-label" data-i18n="studio.clear">Wash away</span></button>
+            <button type="button" class="tool tool--action" id="studio-save"><span class="tool-ko">저장</span><span class="tool-label" data-i18n="studio.save">Save</span></button>
+          </div>
+        </div>
+        <div class="hanji" id="hanji">
+          <canvas id="studio-canvas" aria-label="Ink painting canvas"></canvas>
+          <p class="hanji-hint" id="hanji-hint" data-i18n="studio.hint">draw here</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────────────────────────── VII. Letter ─────────────────────────── -->
+    <section id="letter" class="scene scene--letter" data-scene="letter">
+      <article class="letter reveal">
+        <p class="kicker"><span class="seal seal--xs" aria-hidden="true">書</span><span data-i18n="letter.kicker">VI · 편지</span></p>
+        <h2 data-i18n="letter.title">For Mihwa</h2>
+        <div class="letter-body" data-i18n-html="letter.body"></div>
+        <p class="letter-sign" data-i18n="letter.sign">— with love, from your friend</p>
+        <div class="letter-seal seal seal--lg" id="letter-seal" aria-hidden="true"><span>美</span><span>花</span></div>
+      </article>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p class="footer-main" data-i18n="footer.main">Painted with ink and code, for Mihwa · 2026</p>
+    <p class="footer-credits" data-i18n="footer.credits">Map: Natural Earth · 3D: three.js · Type: Nanum Brush Script, Gowun Batang, Cormorant Garamond</p>
+  </footer>
+
+  <div class="cursor" aria-hidden="true"><span class="cursor-dot"></span><span class="cursor-ring"></span></div>
+  <p class="webgl-fallback" hidden data-i18n="fallback">Your browser could not start WebGL, so the 3D landscape is resting. Everything else still works.</p>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
