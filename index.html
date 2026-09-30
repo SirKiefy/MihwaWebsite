@@ -168,28 +168,50 @@
       </div>
     </section>
 
-    <!-- ─────────── 두 집: two homes ─────────── -->
-    <section id="homes" class="block homes">
-      <div class="homes-grid">
-        <div class="homes-text">
-          <header class="sec-head sec-head--inline">
-            <span class="seal seal--md" aria-hidden="true">家</span>
-            <h2><span class="sec-ko">두 집</span><span class="sec-latin" data-i18n="homes.title">Between Seoul and Paris</span></h2>
-            <p class="lede" data-i18n="homes.sub">Half of her heart wakes up while the other half falls asleep.</p>
-          </header>
-          <div class="clocks">
-            <div class="clock"><span class="clock-city" data-i18n="homes.seoul">Seoul</span><span class="clock-time" id="clock-seoul">--:--</span><span class="clock-date" id="date-seoul"></span></div>
-            <div class="clock-thread" aria-hidden="true"><svg viewBox="0 0 200 40" preserveAspectRatio="none"><path d="M2 30 C 60 -6, 140 -6, 198 30"/></svg><span class="clock-dist" id="clock-dist"></span></div>
-            <div class="clock"><span class="clock-city" data-i18n="homes.paris">Paris</span><span class="clock-time" id="clock-paris">--:--</span><span class="clock-date" id="date-paris"></span></div>
+    <!-- ─────────── 두 집: two homes, on a live globe ─────────── -->
+    <section id="homes" class="homes-sec">
+      <div class="sticky">
+        <canvas id="globe-gl" aria-label="A live globe: day and night right now, with Seoul and Paris joined by a red thread"></canvas>
+        <svg class="leaders" id="leaders" aria-hidden="true"><path id="lead-seoul"/><circle id="lead-seoul-dot" r="3"/><path id="lead-paris"/><circle id="lead-paris-dot" r="3"/></svg>
+        <header class="sec-head sec-head--over sec-head--homes">
+          <span class="seal seal--md" aria-hidden="true">家</span>
+          <h2><span class="sec-ko">두 집</span><span class="sec-latin" data-i18n="homes.title">Between Seoul and Paris</span></h2>
+          <p class="lede" data-i18n="homes.sub">Half of her heart wakes up while the other half falls asleep.</p>
+        </header>
+        <div class="cities">
+          <article class="city" id="city-seoul" data-city="seoul">
+            <span class="seal seal--sm city-seal" aria-hidden="true"><span>首</span><span>爾</span></span>
+            <div class="city-body">
+              <h3><span class="city-ko">서울</span><span class="city-name" data-i18n="homes.seoul">Seoul</span></h3>
+              <p class="city-time"><span class="hm">--:--</span><span class="sec">:--</span></p>
+              <p class="city-date"></p>
+              <p class="city-sky"><i class="sky-ico" aria-hidden="true"></i><span class="sky-text"></span></p>
+              <p class="city-wx" hidden></p>
+            </div>
+          </article>
+          <article class="city" id="city-paris" data-city="paris">
+            <span class="seal seal--sm city-seal" aria-hidden="true"><span>巴</span><span>里</span></span>
+            <div class="city-body">
+              <h3><span class="city-ko">파리</span><span class="city-name" data-i18n="homes.paris">Paris</span></h3>
+              <p class="city-time"><span class="hm">--:--</span><span class="sec">:--</span></p>
+              <p class="city-date"></p>
+              <p class="city-sky"><i class="sky-ico" aria-hidden="true"></i><span class="sky-text"></span></p>
+              <p class="city-wx" hidden></p>
+            </div>
+          </article>
+        </div>
+        <div class="homes-foot">
+          <p class="homes-facts" id="homes-facts"></p>
+          <div class="scrub">
+            <label class="scrub-label" for="scrub" data-i18n="homes.scrub">Move through the day</label>
+            <div class="scrub-row">
+              <input type="range" id="scrub" min="-720" max="720" step="10" value="0">
+              <output id="scrub-out" for="scrub"></output>
+              <button type="button" class="scrub-now" id="scrub-now" data-i18n="homes.now" hidden>now</button>
+            </div>
           </div>
-          <p class="clock-note" id="clock-note"></p>
         </div>
-        <div class="homes-globe">
-          <i class="ink" data-ink="bloom" data-dark="0.28" data-seed="6.6" style="left:4%;top:4%;width:92%;height:92%"></i>
-          <canvas id="globe-gl" aria-label="Globe showing Seoul and Paris"></canvas>
-          <div class="globe-labels" id="globe-labels" aria-hidden="true"></div>
-          <p class="globe-hint" data-i18n="homes.hint">drag to turn</p>
-        </div>
+        <p class="globe-hint" data-i18n="homes.hint">drag to turn the globe</p>
       </div>
     </section>
 

@@ -12,6 +12,7 @@ import { extractPalette } from './fx/palette.js';
 import { mountLightbox } from './fx/lightbox.js';
 import { makeGrainDataURL } from './scene/inktex.js';
 import { setSound, pluck, phrase } from './audio.js';
+import { skyAt, moonPhase, moonIndex, MOON_NAMES, fetchWeather, WEATHER_NAMES } from './fx/live.js';
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -44,6 +45,9 @@ function ink(type, style, data = {}) {
 }
 
 root.style.setProperty('--grain', `url(${makeGrainDataURL()})`);
+
+// the living parts of the page, filled in by boot()
+let field = null, hero = null, screen = null, homes = null, lightbox = null, photos = [];
 
 // ─────────────────────────── language ───────────────────────────
 function guessLang() {
@@ -105,31 +109,79 @@ if (finePointer) {
   addEventListener('pointermove', (e) => { mx = e.clientX; my = e.clientY; cDot.style.transform = `translate3d(${mx}px, ${my}px, 0)`; }, { passive: true });
   const loop = () => { rx += (mx - rx) * 0.2; ry += (my - ry) * 0.2; cRing.style.transform = `translate3d(${rx}px, ${ry}px, 0)`; requestAnimationFrame(loop); };
   loop();
-  document.addEventListener('pointerover', (e) => cursor.classList.toggle('is-hover', !!e.target.closest('a, button, .fan, .ig-tile, #screen-gl')));
+  document.addEventListener('pointerover', (e) => cursor.classList.toggle('is-hover', !!e.target.closest('a, button, input, .fan, .ig-tile, #screen-gl, #globe-gl')));
 }
 
-// ─────────────────────────── clocks ───────────────────────────
+// ─────────────────────────── two homes: live clocks, sun and weather ───────────────────────────
 function haversine(a, b) {
   const R = 6371, r = Math.PI / 180;
   const h = Math.sin(((b.lat - a.lat) * r) / 2) ** 2 + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin(((b.lon - a.lon) * r) / 2) ** 2;
   return 2 * R * Math.asin(Math.sqrt(h));
 }
-const SEOUL = { id: 'seoul', lat: 37.5665, lon: 126.978, home: true, name: { en: 'Seoul', fr: 'Séoul', ko: '서울' } };
-const PARIS = { id: 'paris', lat: 48.8566, lon: 2.3522, home: true, name: { en: 'Paris', fr: 'Paris', ko: '파리' } };
+const SEOUL = { id: 'seoul', tz: 'Asia/Seoul', lat: 37.5665, lon: 126.978, home: true, name: { en: 'Seoul', fr: 'Séoul', ko: '서울' } };
+const PARIS = { id: 'paris', tz: 'Europe/Paris', lat: 48.8566, lon: 2.3522, home: true, name: { en: 'Paris', fr: 'Paris', ko: '파리' } };
+const HOMES = [SEOUL, PARIS];
 function tzOffset(tz, d) { return Math.round((new Date(d.toLocaleString('en-US', { timeZone: tz })) - new Date(d.toLocaleString('en-US', { timeZone: 'UTC' }))) / 36e5); }
-function tickClocks() {
-  const now = new Date();
-  const time = (tz) => new Intl.DateTimeFormat(locale(), { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: tz }).format(now);
-  const date = (tz) => new Intl.DateTimeFormat(locale(), { weekday: 'short', day: 'numeric', month: 'short', timeZone: tz }).format(now);
-  $('#clock-seoul').textContent = time('Asia/Seoul');
-  $('#clock-paris').textContent = time('Europe/Paris');
-  $('#date-seoul').textContent = date('Asia/Seoul');
-  $('#date-paris').textContent = date('Europe/Paris');
-  $('#clock-note').textContent = t('homes.note').replace('{h}', tzOffset('Asia/Seoul', now) - tzOffset('Europe/Paris', now));
-  $('#clock-dist').textContent = t('homes.dist').replace('{d}', (Math.round(haversine(SEOUL, PARIS) / 10) * 10).toLocaleString(locale()));
+function fmtDur(ms) {
+  const mins = Math.max(1, Math.round(ms / 60000));
+  const h = Math.floor(mins / 60), m = mins % 60;
+  return h ? t('dur.hm').replace('{h}', h).replace('{m}', String(m).padStart(2, '0')) : t('dur.m').replace('{m}', m);
 }
-onLang.push(tickClocks);
-setInterval(tickClocks, 15000);
+let timeOffset = 0, weather = null;
+const cityEls = HOMES.map((p) => {
+  const card = $(`#city-${p.id}`);
+  return { p, card, hm: $('.hm', card), sec: $('.sec', card), date: $('.city-date', card), sky: $('.sky-text', card), wx: $('.city-wx', card) };
+});
+function tickClocks() {
+  const now = new Date(Date.now() + timeOffset);
+  cityEls.forEach(({ p, card, hm, sec, date, sky }) => {
+    const parts = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false, timeZone: p.tz }).formatToParts(now);
+    const get = (type) => parts.find((x) => x.type === type)?.value ?? '';
+    hm.textContent = `${get('hour')}:${get('minute')}`;
+    sec.textContent = `:${get('second')}`;
+    date.textContent = new Intl.DateTimeFormat(locale(), { weekday: 'long', day: 'numeric', month: 'long', timeZone: p.tz }).format(now);
+    const s = skyAt(p.lat, p.lon, now);
+    card.dataset.sky = s.state;
+    sky.textContent = s.next ? t(s.next === 'set' ? 'homes.set' : 'homes.rise').replace('{t}', fmtDur(s.in)) : '';
+  });
+  const diff = Math.abs(tzOffset(SEOUL.tz, now) - tzOffset(PARIS.tz, now));
+  const dist = (Math.round(haversine(SEOUL, PARIS) / 10) * 10).toLocaleString(locale());
+  const moonName = MOON_NAMES[lang][moonIndex(moonPhase(now))];
+  const moon = lang === 'ko' ? moonName : moonName.toLocaleLowerCase(locale());
+  $('#homes-facts').textContent = `${t('homes.facts').replace('{d}', dist).replace('{h}', diff)} · ${t('homes.moon').replace('{m}', moon)}`;
+}
+function showWeather() {
+  cityEls.forEach(({ wx }, i) => {
+    const w = weather && weather[i];
+    wx.hidden = !w || w.temp == null;
+    if (!wx.hidden) wx.textContent = `${Math.round(w.temp)}°C · ${WEATHER_NAMES[lang][w.kind]}`;
+  });
+}
+onLang.push(tickClocks, showWeather);
+setInterval(tickClocks, 1000);
+
+// move through the day: the sun sweeps across the globe and both clocks follow
+const scrub = $('#scrub'), scrubOut = $('#scrub-out'), scrubNow = $('#scrub-now');
+function setOffset(mins) {
+  timeOffset = mins * 60000;
+  if (homes) homes.setTimeOffset(timeOffset);
+  scrubNow.hidden = mins === 0;
+  scrubOut.textContent = mins === 0 ? t('homes.now') : `${mins > 0 ? '+' : '−'}${fmtDur(Math.abs(mins) * 60000)}`;
+  tickClocks();
+}
+scrub.addEventListener('input', () => setOffset(Number(scrub.value)));
+scrubNow.addEventListener('click', () => {
+  const from = Number(scrub.value), t0 = performance.now();
+  const step = (now) => {
+    const k = Math.min(1, (now - t0) / 700);
+    const v = Math.round(from * (1 - (1 - (1 - k) ** 3)) / 10) * 10;
+    scrub.value = String(v);
+    setOffset(k < 1 ? v : 0);
+    if (k < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+});
+onLang.push(() => setOffset(Number(scrub.value)));
 
 // ─────────────────────────── about her & bio ───────────────────────────
 onLang.push(() => {
@@ -341,10 +393,10 @@ const fonts = document.fonts
   ? Promise.race([Promise.all([
     document.fonts.load('40px "Nanum Brush Script"', '미화 초상 생각'),
     document.fonts.load('italic 40px "Instrument Serif"', 'Mihwa'),
+    document.fonts.load('900 40px "Noto Serif KR"', '首爾巴里一二三四五六七八'),
   ]), wait(2500)])
   : Promise.resolve();
 
-let field = null, hero = null, screen = null, homes = null, lightbox = null, photos = [];
 
 function layoutAll() {
   layoutMemories();
@@ -479,34 +531,44 @@ async function boot() {
     $('#screen .sticky').appendChild(flat);
   }
 
-  // two homes
+  // two homes, on a live globe
   try {
     const { createHomes } = await import('./fx/homes.js');
-    homes = createHomes($('#globe-gl'), [SEOUL, PARIS], { mobile });
+    homes = createHomes($('#globe-gl'), HOMES, { mobile, reduceMotion });
   } catch (err) { console.warn('globe unavailable', err); homes = null; }
   if (homes) {
-    const labelsEl = $('#globe-labels');
-    const labels = [SEOUL, PARIS].map((p) => {
-      const g = el('div', 'glabel');
-      const span = el('span');
-      g.appendChild(span);
-      labelsEl.appendChild(g);
-      return { p, g, span };
+    homes.setTimeOffset(timeOffset);
+    const svg = $('#leaders');
+    const lines = HOMES.map((p) => ({ path: $(`#lead-${p.id}`), dot: $(`#lead-${p.id}-dot`), card: $(`#city-${p.id}`) }));
+    const citiesEl = $('.cities');
+    let lastFocus;
+    homes.onFrame((proj, focus) => {
+      const box = svg.getBoundingClientRect();
+      const narrow = box.width < 821;
+      proj.forEach((m, i) => {
+        const L = lines[i];
+        const r = L.card.getBoundingClientRect();
+        const ax = narrow ? r.left + r.width / 2 - box.left : r.right - box.left;
+        const ay = narrow ? r.top - box.top : r.top + r.height / 2 - box.top;
+        const bx = m.x, by = m.y + 10;
+        const cx = narrow ? ax : ax + (bx - ax) * 0.6, cy = narrow ? ay + (by - ay) * 0.6 : ay;
+        L.path.setAttribute('d', `M${ax.toFixed(1)} ${ay.toFixed(1)} Q${cx.toFixed(1)} ${cy.toFixed(1)} ${bx.toFixed(1)} ${by.toFixed(1)}`);
+        L.dot.setAttribute('cx', bx.toFixed(1));
+        L.dot.setAttribute('cy', by.toFixed(1));
+        const o = Math.max(0, Math.min(1, (m.facing - 0.05) / 0.25));
+        L.path.style.opacity = String(o);
+        L.dot.style.opacity = String(o);
+      });
+      if (focus !== lastFocus) {
+        lastFocus = focus;
+        citiesEl.classList.toggle('has-focus', !!focus);
+        lines.forEach((L, i) => L.card.classList.toggle('is-focus', HOMES[i].id === focus));
+      }
     });
-    const labelText = () => labels.forEach(({ p, span }) => {
-      span.textContent = p.name[lang === 'ko' ? 'en' : lang];
-      span.appendChild(el('span', 'ko', p.name.ko));
-    });
-    labelText();
-    onLang.push(labelText);
-    homes.onFrame((proj) => proj.forEach((m, i) => {
-      const L = labels[i];
-      if (!L) return;
-      L.g.classList.toggle('is-visible', m.facing > 0.15);
-      L.g.style.transform = `translate3d(${m.x.toFixed(1)}px, ${m.y.toFixed(1)}px, 0)`;
-    }));
+    fetchWeather(HOMES).then((w) => { weather = w; showWeather(); });
+    setInterval(() => fetchWeather(HOMES).then((w) => { if (w) { weather = w; showWeather(); } }), 15 * 60000);
   } else {
-    $('.homes-globe').hidden = true;
+    $('#homes').classList.add('is-flat');
   }
 
   if (!hero && !screen) $('.webgl-fallback').hidden = false;
@@ -515,7 +577,7 @@ async function boot() {
   const watch = (target, api) => api && new IntersectionObserver((es) => es.forEach((e) => api.setActive(e.isIntersecting)), { rootMargin: '10% 0px' }).observe(target);
   watch($('#hero'), hero);
   watch($('#screen'), screen);
-  watch($('.homes-globe'), homes);
+  watch($('#homes'), homes);
   onScroll();
 
   await wait(reduceMotion ? 0 : 300);
@@ -538,6 +600,10 @@ function onScroll() {
     screenHead.style.opacity = String(1 - k * k * (3 - 2 * k));
   }
   updateMemories();
+  if (homes) {
+    const r = $('#homes').getBoundingClientRect();
+    homes.setProgress(-r.top / Math.max(1, r.height - innerHeight));
+  }
   document.body.classList.toggle('scrolled', scrollY > innerHeight * 0.6);
   const c = innerHeight * 0.5;
   let active = railLinks[0];

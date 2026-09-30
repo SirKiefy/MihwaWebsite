@@ -10,7 +10,7 @@ An album in ink for Mihwa. The whole site is one sheet of hanji paper. Every pho
 | **추억 · best memories** | A handscroll that unrolls as you scroll, with each memory painted on a fan. |
 | **길 · her path** | Bachelor's → Master's → diplomacy → human rights & NGOs → fashion, joined by one brush stroke that zigzags between the seals. |
 | **멋 · her style** | Her colours, pulled from her photos and ground like pigments into little dishes. Each gets a traditional Korean colour name. Beside them is a card about her. |
-| **두 집 · two homes** | An ink globe with a red thread between Seoul and Paris, plus live clocks for both cities. |
+| **두 집 · two homes** | A full-screen live stage after 일월오봉도, the royal screen of the sun, the moon and the five peaks. The globe is lit by where the sun really is right now: the night side is indigo ink with city lights in gold, and the sky shows tonight's real moon phase. A paper crane flies the red thread between Seoul and Paris. Scrolling flies from one home to the other. Each city has a card with a live clock, sunrise/sunset countdown and weather, and a slider moves the sun through the day. |
 | **Instagram** | Her handle, bio and a 3×3 grid (ink first, colour on hover), linking to [@mulnaengmyeonn](https://www.instagram.com/mulnaengmyeonn/). |
 | **편지 · a letter** | A personal note, sealed with a 美花 stamp. |
 
@@ -57,7 +57,7 @@ If the repository is public, her photos will be public too.
 - **Ink hero** (`js/fx/fluid.js`): a stable-fluids simulation (advection, vorticity confinement, pressure projection), rendered as ink in water.
 - **Folding screen** (`js/fx/screen.js`): three.js with custom shaders for the silk mount, the painting, the colour wash on hover and the brush captions.
 - **Pigments** (`js/fx/palette.js`): k-means over her photos, matched to traditional colour names in CIE Lab.
-- **Globe**: Natural Earth 1:50m coastlines (public domain) in an ink-wash shader.
+- **Live globe** (`js/fx/homes.js`, `js/fx/live.js`): the sun's position from the NOAA formulae, sunrise and sunset found by searching the sun's altitude, the moon's phase from the synodic month, and the current weather from [Open-Meteo](https://open-meteo.com/) (no key; if the network blocks it, the weather line simply doesn't appear). The layers sit at different depths, so they part as the pointer moves. The ones that never change are painted once into a texture. Coastlines are Natural Earth 1:50m (public domain).
 - Every canvas only runs while it's on screen. The site respects `prefers-reduced-motion`, works with keyboard and touch, and falls back gracefully without WebGL.
 
 ```
@@ -68,8 +68,9 @@ js/
   i18n.js          interface text (EN / FR / KO)
   main.js          wiring: language, scroll, sections, lightbox
   audio.js         gayageum plucks
-  fx/              ink painting, ink field, fluid, folding screen, palette, lightbox, globe
-  scene/           globe and shared shader code
+  fx/              ink painting, ink field, fluid, folding screen, palette, lightbox, live globe
+  data/            coastlines and city lights
+  scene/           shared shader code and ink textures
   ink/brush.js     seal stamp and small ink helpers
 photos/            her photos go here
 vendor/three/      three.js r180 (MIT)
