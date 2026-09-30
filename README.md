@@ -1,32 +1,36 @@
 # 미화 · Mihwa
 
-An ink-painted, interactive 3D website: a small gift for Mihwa, who studies international relations, loves Korean ink painting (수묵화), and is Korean-French.
-
-The whole page is painted in code on warm hanji paper, with no image files:
+A roll of film for Mihwa, framed in Korean ink. It's an interactive website about her: her portrait, her prints, her poses and her colours, with a nod to her two homes and a letter at the end.
 
 | Scene | What happens |
 | --- | --- |
-| **I · Mountains** (산수) | A layered landscape after Jeong Seon's "true-view" style: crystalline peaks, folds, texture strokes, moss dots, pines and a pavilion, drifting mist, a line of geese, falling plum petals and a plum branch against the moon. Click the mountains to scatter blossoms. |
-| **II · The moon** (같은 달 아래) | The moon is painted the old way, *홍운탁월*, by washing ink into the clouds around it. Live clocks show Seoul and Paris side by side. |
-| **III · The world** (세계) | Scrolling turns the moon into an ink-wash globe, with a red thread between Seoul and Paris. Drag it, or pick one of 16 places where the world talks to itself (the UN, the ICJ, the EU, the African Union, the Green Climate Fund, Panmunjom and more). Each place has a short note and its distance from both homes. |
-| **Words of diplomacy** | Flip cards for Korean diplomatic vocabulary, showing the hanja inside each word. |
-| **IV · France & Korea** | A handscroll (두루마리) that unrolls as you scroll: 140 years from 1886 to 2026. |
-| **V · The Four Gentlemen** (사군자) | Plum, orchid, chrysanthemum and bamboo paint themselves stroke by stroke with a bristle-brush engine. Click a hanging scroll to paint it again. |
-| **VI · Empty space** (여백의 미) | A small ink studio: dark, mid and pale ink, plum-blossom stamps, a 美花 seal, wash away, and save as PNG. |
-| **VII · A letter** (편지) | A personal letter at dusk, sealed with a cinnabar stamp. |
+| **Her portrait, in ink** | Her photo appears inside an ink bloom on hanji paper. A real GPU fluid simulation carries ink through the water around her. Moving the cursor or a finger stirs it, and clicking drops more ink. |
+| **Darkroom** | A 3D walk along a drying line under the red safelight. Each print develops as you reach it (shadows first, like real paper in the tray), with its caption pencilled in the margin. Click a print to open it. |
+| **Contact sheet** | Her poses on film strips on a light table. A loupe follows the cursor, and red grease-pencil circles and handwritten notes mark the favourites. |
+| **Her palette** | Her colours, pulled automatically from her photos with k-means, plus a card of field notes about her. |
+| **Two homes** | An ink globe with a red thread between Seoul and Paris, and live clocks for both cities. |
+| **Instagram** | Her handle, a short bio, and a 3×3 grid from her photos, linking to [@mulnaengmyeonn](https://www.instagram.com/mulnaengmyeonn/). |
+| **A letter** | A personal note, sealed with a 美花 stamp. |
 
-Everything is written in **English, French and Korean** (toggle at the top right). Sound is off by default. The ♪ button turns on a gentle gayageum-like pluck with 농현 vibrato.
+Everything is in **English, French and Korean** (toggle at the top right). Sound is off by default. The camera button turns on shutter clicks and soft gayageum plucks.
 
-## ✎ Personalise it
+## ✎ Add her photos
 
-Open `js/content.js`:
+1. Put the photos in the `photos/` folder (JPG or PNG; about 1600 px on the long side is plenty).
+2. Open `js/her.js` and write each file name in `PHOTOS`, for example `src: 'photos/01.jpg'`.
+3. Rewrite the captions to fit each photo (English, French and Korean).
+4. Optionally choose:
+   - `heroPhoto`: which photo appears in the ink at the top.
+   - `favourites`: which ones get circled on the contact sheet.
+   - `bio` and `notes`: the short lines about her.
 
-- **`LETTER`** holds the letter in all three languages, plus the signature line. Write your own words there.
-- `PLACES`, `LEXICON`, `EVENTS` and `GENTLEMEN` hold the globe places, vocabulary, timeline and scroll captions.
+Any photo left as `src: ''` shows a film-style placeholder, so the site always looks complete.
+
+The **letter** is in `LETTER` in the same file. Write your own words there.
 
 ## Run it locally
 
-It is a static site with no build step. Any static server works:
+It is a static site with no build step:
 
 ```bash
 npx serve .
@@ -40,25 +44,29 @@ Then open <http://localhost:8080>. Opening `index.html` directly from disk won't
 
 `.github/workflows/pages.yml` deploys the site to **GitHub Pages** on every push to `main`. Enable it once under **Settings → Pages → Source: GitHub Actions**.
 
+If the repository is public, her photos will be public too.
+
 ## How it's made
 
-- **3D**: [three.js](https://threejs.org) (vendored in `vendor/three`, MIT). Every surface uses a custom shader:
-  - Mountains are layered planes. Their ridge profiles, inner folds and brush contours come from a small ridge texture, and all washes and strokes sample a single baked, tileable noise texture, which keeps it fast on phones.
-  - The globe is one sphere that morphs from moon to Earth as ink spreads across it. The land comes from Natural Earth 1:50m data (public domain), stored as a compact SVG path in `js/data/land.js`.
-  - Picture quality adapts to the device's frame rate.
-- **Brush engine** (`js/ink/brush.js`): each stroke is a wet body that bleeds into the paper plus a bundle of bristles that each carry their own ink, so strokes run dry into "flying white" (비백). A brush can also be loaded with two tones across its width.
-- **Type**: Nanum Brush Script, Gowun Batang, Noto Serif KR and Cormorant Garamond, via Google Fonts.
+- **Ink** (`js/fx/fluid.js`): a WebGL2 stable-fluids simulation (advection, vorticity confinement, pressure projection) at half-float precision, rendered as an ink wash with pigment pooling at the edges. Her photo is framed by an animated bloom whose edge the water can push around.
+- **Darkroom** (`js/fx/reel.js`): three.js, with custom shaders for the hand-brushed emulsion edge, the developing curve, the paper curl and the film grain. Rendered with antialiasing at full device resolution.
+- **Contact sheet** (`js/fx/sheet.js`): the grease-pencil loops are generated SVG paths drawn with a stroke animation and a waxy filter.
+- **Palette** (`js/fx/palette.js`): k-means clustering over downsampled pixels from all her photos.
+- **Globe**: Natural Earth 1:50m coastlines (public domain) in an ink-wash shader.
+- Every canvas only runs while it's on screen.
 - Respects `prefers-reduced-motion`, works with keyboard and touch, and falls back gracefully without WebGL.
 
 ```
 index.html
 css/style.css
 js/
-  main.js            orchestration: scroll story, language, globe UI, studio, sound
-  content.js         all text (EN/FR/KO) — edit the letter here
-  audio.js           Karplus–Strong gayageum pluck
-  scene/             three.js world, globe, shaders, painted textures
-  ink/               brush engine, Four Gentlemen, studio, handscroll
-  data/land.js       world coastlines
-vendor/three/        three.js r180
+  her.js           ✎ her photos, captions, notes and the letter
+  i18n.js          interface text (EN / FR / KO)
+  main.js          wiring: language, scroll, lightbox, sections
+  audio.js         shutter clicks and gayageum plucks
+  fx/              ink fluid, darkroom, contact sheet, palette, lightbox, globe
+  scene/           globe and shared shader code
+  ink/brush.js     seal stamp and small ink helpers
+photos/            her photos go here
+vendor/three/      three.js r180 (MIT)
 ```

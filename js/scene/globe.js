@@ -73,7 +73,7 @@ export class Globe {
           float coast = smoothstep(0.1, 0.42, L.r) * (1.0 - smoothstep(0.52, 0.9, L.r));
           float n = fbm3(vObj * 7.0, nrm);
           float nb = fbm3(vObj * 2.1 + 5.0, nrm);
-          float inkLand = land * (0.2 + 0.32 * n + 0.22 * nb);
+          float inkLand = land * (0.12 + 0.2 * n + 0.14 * nb);
           float bleed = L.g * (1.0 - land) * 0.14;
           float lat = vUv.y * 180.0;
           float waves = sin(lat * 2.4 + sin(vUv.x * 50.0 + lat * 0.13) * 1.4);

@@ -100,3 +100,25 @@ export function pluck(i = Math.floor(Math.random() * SCALE.length), { gain = 0.2
 export function phrase(start = 2) {
   [0, 1, 2, 4].forEach((d, k) => setTimeout(() => pluck(start + d, { gain: 0.16 }), k * 140));
 }
+
+/** A soft mechanical shutter: two short, filtered clicks. */
+export function shutter({ gain = 0.35 } = {}) {
+  if (!enabled || !ctx) return;
+  const now = ctx.currentTime;
+  const len = Math.floor(ctx.sampleRate * 0.03);
+  const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 6);
+  [0, 0.075].forEach((off, k) => {
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    const bp = ctx.createBiquadFilter();
+    bp.type = 'bandpass';
+    bp.frequency.value = k ? 2600 : 1700;
+    bp.Q.value = 1.4;
+    const g = ctx.createGain();
+    g.gain.value = gain * (k ? 0.7 : 1);
+    src.connect(bp).connect(g).connect(master);
+    src.start(now + off);
+  });
+}

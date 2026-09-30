@@ -2,43 +2,10 @@
 // Every ink wash in the scene samples this one 256² texture instead of
 // evaluating procedural noise per pixel, which keeps phones and laptops cool.
 import * as THREE from '../../vendor/three/three.module.min.js';
-import { rng } from '../ink/brush.js';
-
-function tileFbm(size, period, octaves, seed) {
-  const out = new Float32Array(size * size);
-  let amp = 1, total = 0;
-  for (let o = 0; o < octaves; o++) {
-    const p = period << o;
-    const R = rng(seed * 31 + o * 7 + 1);
-    const lat = new Float32Array(p * p);
-    for (let i = 0; i < lat.length; i++) lat[i] = R();
-    for (let y = 0; y < size; y++) {
-      const fy = (y / size) * p, iy = Math.floor(fy), ty = fy - iy;
-      const sy = ty * ty * ty * (ty * (ty * 6 - 15) + 10);
-      const y0 = (iy % p) * p, y1 = ((iy + 1) % p) * p;
-      for (let x = 0; x < size; x++) {
-        const fx = (x / size) * p, ix = Math.floor(fx), tx = fx - ix;
-        const sx = tx * tx * tx * (tx * (tx * 6 - 15) + 10);
-        const x0 = ix % p, x1 = (ix + 1) % p;
-        const a = lat[y0 + x0] + (lat[y0 + x1] - lat[y0 + x0]) * sx;
-        const b = lat[y1 + x0] + (lat[y1 + x1] - lat[y1 + x0]) * sx;
-        out[y * size + x] += (a + (b - a) * sy) * amp;
-      }
-    }
-    total += amp;
-    amp *= 0.5;
-  }
-  // normalise to the full 0..1 range
-  let mn = Infinity, mx = -Infinity;
-  for (let i = 0; i < out.length; i++) { out[i] /= total; mn = Math.min(mn, out[i]); mx = Math.max(mx, out[i]); }
-  for (let i = 0; i < out.length; i++) out[i] = (out[i] - mn) / (mx - mn);
-  return out;
-}
+import { noiseData } from '../fx/noise.js';
 
 export function makeNoiseTexture(size = 256) {
-  const chans = [tileFbm(size, 4, 5, 1), tileFbm(size, 8, 4, 2), tileFbm(size, 16, 3, 3), tileFbm(size, 2, 6, 4)];
-  const data = new Uint8Array(size * size * 4);
-  for (let i = 0; i < size * size; i++) for (let c = 0; c < 4; c++) data[i * 4 + c] = Math.round(chans[c][i] * 255);
+  const { data } = noiseData(size);
   const t = new THREE.DataTexture(data, size, size, THREE.RGBAFormat, THREE.UnsignedByteType);
   t.wrapS = t.wrapT = THREE.RepeatWrapping;
   t.magFilter = THREE.LinearFilter;

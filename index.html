@@ -4,22 +4,17 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Mihwa · 미화</title>
-  <meta name="description" content="An ink-painted, interactive 3D gift for Mihwa: Korean ink landscapes, the moon over Seoul and Paris, a globe of international relations, and the Four Gentlemen.">
-  <meta name="theme-color" content="#f2ebdd">
-  <meta property="og:title" content="Mihwa · 미화">
-  <meta property="og:description" content="Between Seoul and Paris, between ink and the wide world.">
+  <meta name="description" content="A roll of film for Mihwa: her portrait in ink, her prints in the darkroom, her poses on a contact sheet, her colours.">
+  <meta name="theme-color" content="#f1ebe0">
   <link rel="icon" href="assets/seal.svg" type="image/svg+xml">
-
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=Gowun+Batang:wght@400;700&family=Nanum+Brush+Script&family=Noto+Serif+KR:wght@500;700;900&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@400;500&family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400;1,500&family=Gowun+Batang:wght@400;700&family=Nanum+Brush+Script&family=Nanum+Pen+Script&family=Noto+Serif+KR:wght@700;900&display=swap">
   <link rel="stylesheet" href="css/style.css">
-
 </head>
 <body>
-  <svg class="defs" width="0" height="0" aria-hidden="true" style="position:absolute">
+  <svg width="0" height="0" aria-hidden="true" style="position:absolute">
     <defs>
-      <!-- Rough, slightly eroded edges for cinnabar seals (낙관) -->
       <filter id="seal-rough" x="-10%" y="-10%" width="120%" height="120%">
         <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="2" seed="3" result="n1"/>
         <feDisplacementMap in="SourceGraphic" in2="n1" scale="2.4" xChannelSelector="R" yChannelSelector="G" result="d"/>
@@ -27,25 +22,31 @@
         <feColorMatrix in="n2" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  3.2 0 0 0 -0.95" result="speck"/>
         <feComposite in="d" in2="speck" operator="in"/>
       </filter>
+      <!-- waxy grease-pencil texture -->
+      <filter id="wax" x="-5%" y="-5%" width="110%" height="110%">
+        <feTurbulence type="fractalNoise" baseFrequency="1.6" numOctaves="1" seed="4" result="t"/>
+        <feDisplacementMap in="SourceGraphic" in2="t" scale="1.6" xChannelSelector="R" yChannelSelector="G" result="d"/>
+        <feColorMatrix in="t" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -2.4 2.2" result="holes"/>
+        <feComposite in="d" in2="holes" operator="in"/>
+      </filter>
     </defs>
   </svg>
 
-  <!-- ─────────────────────────── Loader ─────────────────────────── -->
+  <!-- film leader countdown -->
   <div id="loader" aria-live="polite">
-    <div class="loader-drop">
-      <span class="ripple"></span><span class="ripple"></span><span class="ripple"></span>
-      <span class="drop"></span>
+    <div class="leader" aria-hidden="true">
+      <div class="leader-sweep"></div>
+      <div class="leader-ring"></div>
+      <div class="leader-cross"></div>
+      <span class="leader-num">3</span>
     </div>
-    <p class="loader-text" data-i18n="loader">Grinding the ink…</p>
+    <p class="loader-text" data-i18n="loader">Loading the film…</p>
   </div>
 
-  <canvas id="webgl" aria-hidden="true"></canvas>
-  <div class="vignette" aria-hidden="true"></div>
   <div class="grain" aria-hidden="true"></div>
 
-  <!-- ─────────────────────────── Navigation ─────────────────────────── -->
   <header class="topbar">
-    <a class="brand" href="#hero" aria-label="Mihwa — back to top">
+    <a class="brand" href="#hero" aria-label="Mihwa, back to top">
       <span class="seal seal--sm" aria-hidden="true"><span>美</span><span>花</span></span>
       <span class="brand-text"><span class="ko">미화</span><span class="dot">·</span><em>Mihwa</em></span>
     </a>
@@ -55,201 +56,171 @@
         <button type="button" data-lang="fr" aria-pressed="false">FR</button>
         <button type="button" data-lang="ko" aria-pressed="false">한</button>
       </div>
-      <button type="button" class="sound" aria-pressed="false" aria-label="Sound" data-i18n-title="sound">
-        <svg viewBox="0 0 32 32" aria-hidden="true"><path class="string" d="M4 10 Q16 6 28 10"/><path class="string" d="M4 16 Q16 12 28 16"/><path class="string" d="M4 22 Q16 18 28 22"/><circle cx="11" cy="9" r="1.6"/><circle cx="19" cy="15" r="1.6"/><circle cx="14" cy="21" r="1.6"/></svg>
+      <button type="button" class="sound" aria-pressed="false" data-i18n-title="sound" aria-label="Sound">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="18" height="12" rx="2.5"/><rect x="8" y="4.5" width="5" height="3" rx="1"/><circle cx="12" cy="13" r="3.6"/><circle class="lens" cx="12" cy="13" r="1.6"/></svg>
       </button>
     </div>
   </header>
 
   <nav class="rail" aria-label="Sections">
-    <div class="rail-ink"><span></span></div>
     <ol>
-      <li><a href="#hero" data-i18n-label="nav.hero"><span class="rail-dot"></span><span class="rail-label" data-i18n="nav.hero">Mountains</span></a></li>
-      <li><a href="#moon"><span class="rail-dot"></span><span class="rail-label" data-i18n="nav.moon">The moon</span></a></li>
-      <li><a href="#world"><span class="rail-dot"></span><span class="rail-label" data-i18n="nav.world">The world</span></a></li>
-      <li><a href="#ties"><span class="rail-dot"></span><span class="rail-label" data-i18n="nav.ties">140 years</span></a></li>
-      <li><a href="#gentlemen"><span class="rail-dot"></span><span class="rail-label" data-i18n="nav.gentlemen">Four Gentlemen</span></a></li>
-      <li><a href="#studio"><span class="rail-dot"></span><span class="rail-label" data-i18n="nav.studio">Paint</span></a></li>
-      <li><a href="#letter"><span class="rail-dot"></span><span class="rail-label" data-i18n="nav.letter">Letter</span></a></li>
+      <li><a href="#hero"><span class="rail-label" data-i18n="nav.hero">Mihwa</span><span class="rail-dot"></span></a></li>
+      <li><a href="#reel"><span class="rail-label" data-i18n="nav.reel">Darkroom</span><span class="rail-dot"></span></a></li>
+      <li><a href="#sheet"><span class="rail-label" data-i18n="nav.sheet">Poses</span><span class="rail-dot"></span></a></li>
+      <li><a href="#style"><span class="rail-label" data-i18n="nav.style">Her style</span><span class="rail-dot"></span></a></li>
+      <li><a href="#homes"><span class="rail-label" data-i18n="nav.homes">Two homes</span><span class="rail-dot"></span></a></li>
+      <li><a href="#ig"><span class="rail-label" data-i18n="nav.ig">Instagram</span><span class="rail-dot"></span></a></li>
+      <li><a href="#letter"><span class="rail-label" data-i18n="nav.letter">Letter</span><span class="rail-dot"></span></a></li>
     </ol>
   </nav>
 
   <main>
-    <!-- ─────────────────────────── I. Hero ─────────────────────────── -->
-    <section id="hero" class="scene scene--hero" data-scene="hero">
-      <div class="hero-inner">
-        <p class="eyebrow reveal" data-i18n="hero.eyebrow">A small gift, painted in ink</p>
+    <!-- ─────────── Her portrait, in ink ─────────── -->
+    <section id="hero" class="hero" data-theme-bar="light">
+      <canvas id="ink-gl" aria-hidden="true"></canvas>
+      <img class="hero-fallback" id="hero-fallback" alt="" hidden>
+      <div class="hero-text">
+        <p class="roll mono" data-i18n="hero.roll">Mihwa 400 · Roll 01</p>
         <h1 class="hero-title">
-          <span class="hero-ko" aria-hidden="true"><span>미</span><span>화</span></span>
-          <span class="hero-latin">Mihwa</span>
-          <span class="hero-hanja" aria-hidden="true">美花</span>
+          <span class="h-ko" aria-hidden="true">미화</span>
+          <span class="h-latin">Mihwa</span>
         </h1>
-        <p class="hero-sub reveal" data-i18n="hero.sub">Between Seoul and Paris, between ink and the wide world.</p>
+        <p class="hero-sub" data-i18n="hero.sub">Soft ink, grainy film, and one very photogenic friend.</p>
+        <a class="ig-chip" id="hero-ig" target="_blank" rel="noopener"></a>
       </div>
-      <p class="hero-hint" data-i18n="hero.hint">Click the mountains to scatter blossoms · scroll to begin</p>
-      <div class="scroll-cue" aria-hidden="true"><span></span></div>
-      <p class="plate" data-i18n="hero.plate">Sansuhwa — a landscape after the “true-view” style of Jeong Seon (1676–1759)</p>
+      <p class="hero-hint mono" data-i18n="hero.hint">Move to stir the ink</p>
+      <div class="edge-code mono" aria-hidden="true"><span>MIHWA 400</span><span>▸ 1</span><span>▸ 1A</span><span>5063</span><span>▸ 2</span><span>▸ 2A</span></div>
     </section>
 
-    <!-- ─────────────────────────── II. Moon ─────────────────────────── -->
-    <section id="moon" class="scene scene--moon" data-scene="moon">
-      <div class="panel panel--left reveal">
-        <p class="kicker"><span class="seal seal--xs" aria-hidden="true">月</span><span data-i18n="moon.kicker">I · 같은 달 아래</span></p>
-        <h2 data-i18n="moon.title">Under the same moon</h2>
-        <p class="lede" data-i18n-html="moon.body">Korean painters had a way of drawing the moon without drawing it at all…</p>
-        <div class="clocks" aria-live="off">
-          <div class="clock">
-            <span class="clock-city" data-i18n="moon.seoul">Seoul</span>
-            <span class="clock-time" id="clock-seoul">--:--</span>
-            <span class="clock-date" id="date-seoul"></span>
-          </div>
-          <div class="clock-thread" aria-hidden="true">
-            <svg viewBox="0 0 200 40" preserveAspectRatio="none"><path d="M2 30 C 60 -6, 140 -6, 198 30"/></svg>
-            <span class="clock-dist" id="clock-dist">8,960 km</span>
-          </div>
-          <div class="clock">
-            <span class="clock-city" data-i18n="moon.paris">Paris</span>
-            <span class="clock-time" id="clock-paris">--:--</span>
-            <span class="clock-date" id="date-paris"></span>
-          </div>
-        </div>
-        <p class="clock-note" id="clock-note"></p>
-      </div>
-    </section>
-
-    <!-- ─────────────────────────── III. World ─────────────────────────── -->
-    <section id="world" class="scene scene--world" data-scene="world" data-hold="0.22,0.8">
+    <!-- ─────────── Darkroom ─────────── -->
+    <section id="reel" class="reel" data-theme-bar="dark">
       <div class="sticky">
-        <div class="world-layout">
-          <div class="panel panel--world">
-            <p class="kicker"><span class="seal seal--xs" aria-hidden="true">界</span><span data-i18n="world.kicker">II · 세계</span></p>
-            <h2 data-i18n="world.title">A world to understand</h2>
-            <p class="lede" data-i18n="world.body">International relations is the art of reading the lines between places…</p>
-            <ul class="places" id="places" aria-label="Places"></ul>
-          </div>
-          <div class="globe-hit" id="globe-hit" aria-hidden="true"></div>
-          <article class="place-card" id="place-card" aria-live="polite" hidden>
-            <button type="button" class="place-close" aria-label="Close" id="place-close">×</button>
-            <p class="place-ko" id="pc-ko"></p>
-            <h3 id="pc-name"></h3>
-            <p class="place-inst" id="pc-inst"></p>
-            <p class="place-desc" id="pc-desc"></p>
-            <dl class="place-dist">
-              <div><dt data-i18n="world.fromSeoul">from Seoul</dt><dd id="pc-seoul"></dd></div>
-              <div><dt data-i18n="world.fromParis">from Paris</dt><dd id="pc-paris"></dd></div>
-              <div><dt data-i18n="world.coords">coordinates</dt><dd id="pc-coords"></dd></div>
-            </dl>
-          </article>
-          <div class="globe-labels" id="globe-labels" aria-hidden="true"></div>
-          <p class="globe-hint" data-i18n="world.hint">drag to turn the world</p>
+        <canvas id="reel-gl"></canvas>
+        <div class="reel-head">
+          <p class="kicker mono" data-i18n="reel.kicker">Roll 01 · Darkroom</p>
+          <h2 data-i18n="reel.title">Developing</h2>
+          <p class="lede" data-i18n="reel.sub">Prints drying on the line.</p>
         </div>
+        <div class="reel-counter" aria-live="polite">
+          <span class="rc-label mono" data-i18n="reel.frame">Frame</span>
+          <span class="rc-num mono" id="rc-num">01</span>
+          <span class="rc-of mono" id="rc-of">/ 12</span>
+          <span class="rc-cap" id="rc-cap"></span>
+        </div>
+        <div class="safelight" aria-hidden="true"></div>
       </div>
     </section>
 
-    <!-- lexicon ribbon -->
-    <section id="lexicon" class="paper paper--lexicon" data-scene="lexicon">
-      <div class="lexicon-head">
-        <p class="kicker"><span class="seal seal--xs" aria-hidden="true">言</span><span data-i18n="lex.kicker">Words of diplomacy</span></p>
-        <p class="lexicon-sub" data-i18n="lex.sub">Hover a word to see its hanja — the Sino-Korean roots hiding inside everyday Korean.</p>
-      </div>
-      <ul class="lexicon" id="lexicon-list"></ul>
-    </section>
-
-    <!-- ─────────────────────────── IV. Ties (handscroll) ─────────────────────────── -->
-    <section id="ties" class="paper paper--ties" data-scene="ties">
-      <div class="sticky">
-        <div class="ties-head">
-          <p class="kicker"><span class="seal seal--xs" aria-hidden="true">韓</span><span class="seal seal--xs seal--blue" aria-hidden="true">佛</span><span data-i18n="ties.kicker">III · 한불 140년</span></p>
-          <h2 data-i18n="ties.title">140 years of a friendship</h2>
-          <p class="lede" data-i18n="ties.body">France and Korea signed their first treaty in 1886. Keep scrolling to unroll the story.</p>
-        </div>
-        <div class="handscroll">
-          <div class="roller roller--left" aria-hidden="true"></div>
-          <div class="scroll-window">
-            <div class="scroll-track" id="scroll-track">
-              <canvas class="scroll-painting" id="scroll-painting" aria-hidden="true"></canvas>
-              <ol class="events" id="events"></ol>
-            </div>
-          </div>
-          <div class="roller roller--right" aria-hidden="true"></div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ─────────────────────────── V. Four Gentlemen ─────────────────────────── -->
-    <section id="gentlemen" class="paper paper--gentlemen" data-scene="gentlemen">
+    <!-- ─────────── Contact sheet ─────────── -->
+    <section id="sheet" class="lighttable" data-theme-bar="light">
       <div class="section-head">
-        <p class="kicker"><span class="seal seal--xs" aria-hidden="true">君</span><span data-i18n="gent.kicker">IV · 사군자</span></p>
-        <h2 data-i18n="gent.title">The Four Gentlemen</h2>
-        <p class="lede" data-i18n="gent.body">Plum, orchid, chrysanthemum, bamboo…</p>
+        <p class="kicker mono" data-i18n="sheet.kicker">Contact sheet · Poses</p>
+        <h2 data-i18n="sheet.title">Every pose, circled</h2>
+        <p class="lede" data-i18n="sheet.sub">The old way to pick favourites.</p>
       </div>
-      <div class="scrolls" id="scrolls"></div>
-    </section>
-
-    <!-- ─────────────────────────── VI. Studio ─────────────────────────── -->
-    <section id="studio" class="paper paper--studio" data-scene="studio">
-      <div class="section-head section-head--row">
-        <div>
-          <p class="kicker"><span class="seal seal--xs" aria-hidden="true">白</span><span data-i18n="studio.kicker">V · 여백의 미</span></p>
-          <h2 data-i18n="studio.title">The beauty of empty space</h2>
-        </div>
-        <p class="lede" data-i18n="studio.body">In Korean painting, what you leave unpainted matters as much as what you paint…</p>
-      </div>
-      <div class="studio">
-        <div class="studio-tools" role="toolbar" aria-label="Painting tools">
-          <div class="tool-group" role="radiogroup" aria-label="Ink">
-            <button type="button" class="tool tool--ink is-active" data-tool="ink" data-tone="0.95" role="radio" aria-checked="true"><span class="swatch" style="--tone:.95"></span><span class="tool-ko">농묵</span><span class="tool-label" data-i18n="studio.dark">Dark ink</span></button>
-            <button type="button" class="tool tool--ink" data-tool="ink" data-tone="0.55" role="radio" aria-checked="false"><span class="swatch" style="--tone:.55"></span><span class="tool-ko">중묵</span><span class="tool-label" data-i18n="studio.mid">Mid ink</span></button>
-            <button type="button" class="tool tool--ink" data-tool="ink" data-tone="0.25" role="radio" aria-checked="false"><span class="swatch" style="--tone:.25"></span><span class="tool-ko">담묵</span><span class="tool-label" data-i18n="studio.pale">Pale ink</span></button>
-            <button type="button" class="tool" data-tool="blossom" role="radio" aria-checked="false"><span class="swatch swatch--blossom"></span><span class="tool-ko">매화</span><span class="tool-label" data-i18n="studio.blossom">Blossom</span></button>
-            <button type="button" class="tool" data-tool="seal" role="radio" aria-checked="false"><span class="swatch swatch--seal"></span><span class="tool-ko">낙관</span><span class="tool-label" data-i18n="studio.seal">Seal</span></button>
-          </div>
-          <label class="size">
-            <span class="tool-ko">붓</span><span class="tool-label" data-i18n="studio.size">Brush</span>
-            <input type="range" id="brush-size" min="4" max="60" value="22">
-          </label>
-          <div class="tool-group tool-group--actions">
-            <button type="button" class="tool tool--action" id="studio-clear"><span class="tool-ko">씻기</span><span class="tool-label" data-i18n="studio.clear">Wash away</span></button>
-            <button type="button" class="tool tool--action" id="studio-save"><span class="tool-ko">저장</span><span class="tool-label" data-i18n="studio.save">Save</span></button>
-          </div>
-        </div>
-        <div class="hanji" id="hanji">
-          <canvas id="studio-canvas" aria-label="Ink painting canvas"></canvas>
-          <p class="hanji-hint" id="hanji-hint" data-i18n="studio.hint">draw here</p>
-        </div>
+      <div class="sheet" id="contact">
+        <div class="strips"></div>
+        <svg class="marks" aria-hidden="true"></svg>
+        <div class="gp-notes" aria-hidden="true"></div>
       </div>
     </section>
 
-    <!-- ─────────────────────────── VII. Letter ─────────────────────────── -->
-    <section id="letter" class="scene scene--letter" data-scene="letter">
-      <article class="letter reveal">
-        <p class="kicker"><span class="seal seal--xs" aria-hidden="true">書</span><span data-i18n="letter.kicker">VI · 편지</span></p>
+    <!-- ─────────── Her style ─────────── -->
+    <section id="style" class="paper" data-theme-bar="light">
+      <div class="section-head">
+        <p class="kicker mono" data-i18n="style.kicker">Her style</p>
+        <h2 data-i18n="style.title">Her palette</h2>
+        <p class="lede" data-i18n="style.sub">Pulled straight from her photos.</p>
+      </div>
+      <div class="style-grid">
+        <div class="palette" id="palette"></div>
+        <aside class="field-notes">
+          <h3 data-i18n="style.notes">Field notes</h3>
+          <dl id="notes"></dl>
+        </aside>
+      </div>
+    </section>
+
+    <!-- ─────────── Two homes ─────────── -->
+    <section id="homes" class="paper homes" data-theme-bar="light">
+      <div class="homes-grid">
+        <div class="homes-text">
+          <p class="kicker mono" data-i18n="homes.kicker">Two homes</p>
+          <h2 data-i18n="homes.title">Between Seoul and Paris</h2>
+          <p class="lede" data-i18n="homes.sub">Half of her heart wakes up while the other half falls asleep.</p>
+          <div class="clocks">
+            <div class="clock"><span class="clock-city mono" data-i18n="homes.seoul">Seoul</span><span class="clock-time" id="clock-seoul">--:--</span><span class="clock-date" id="date-seoul"></span></div>
+            <div class="clock-thread" aria-hidden="true"><svg viewBox="0 0 200 40" preserveAspectRatio="none"><path d="M2 30 C 60 -6, 140 -6, 198 30"/></svg><span class="clock-dist mono" id="clock-dist"></span></div>
+            <div class="clock"><span class="clock-city mono" data-i18n="homes.paris">Paris</span><span class="clock-time" id="clock-paris">--:--</span><span class="clock-date" id="date-paris"></span></div>
+          </div>
+          <p class="clock-note" id="clock-note"></p>
+        </div>
+        <div class="homes-globe">
+          <canvas id="globe-gl" aria-label="Globe showing Seoul and Paris"></canvas>
+          <div class="globe-labels" id="globe-labels" aria-hidden="true"></div>
+          <p class="globe-hint mono" data-i18n="homes.hint">drag to turn</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────────── Instagram ─────────── -->
+    <section id="ig" class="ig-sec" data-theme-bar="dark">
+      <div class="ig-card">
+        <div class="ig-top">
+          <a class="ig-avatar" id="ig-avatar" target="_blank" rel="noopener" aria-label="Instagram profile">
+            <img id="ig-avatar-img" alt="">
+            <svg class="ig-ring" viewBox="0 0 120 120" aria-hidden="true"><path id="ig-ring-path"/></svg>
+          </a>
+          <div class="ig-meta">
+            <p class="kicker mono" data-i18n="ig.kicker">Find her</p>
+            <h2 class="ig-handle" id="ig-handle">@mulnaengmyeonn</h2>
+            <p class="ig-name"><span class="ko">미화</span> · Mihwa</p>
+            <ul class="ig-bio" id="ig-bio"></ul>
+            <a class="ig-follow" id="ig-follow" target="_blank" rel="noopener"><span data-i18n="ig.follow">Follow on Instagram</span> <span aria-hidden="true">↗</span></a>
+          </div>
+        </div>
+        <p class="ig-from mono" data-i18n="ig.from">From her feed</p>
+        <div class="ig-grid" id="ig-grid"></div>
+      </div>
+    </section>
+
+    <!-- ─────────── Letter ─────────── -->
+    <section id="letter" class="letter-sec" data-theme-bar="light">
+      <article class="letter">
+        <p class="kicker mono" data-i18n="letter.kicker">A letter</p>
         <h2 data-i18n="letter.title">For Mihwa</h2>
         <div class="letter-body" data-i18n-html="letter.body"></div>
-        <p class="letter-sign" data-i18n="letter.sign">— with love, from your friend</p>
+        <p class="letter-sign" data-i18n="letter.sign">— your friend</p>
         <div class="letter-seal seal seal--lg" id="letter-seal" aria-hidden="true"><span>美</span><span>花</span></div>
       </article>
     </section>
   </main>
 
-  <footer class="footer">
-    <p class="footer-main" data-i18n="footer.main">Painted with ink and code, for Mihwa · 2026</p>
-    <p class="footer-credits" data-i18n="footer.credits">Map: Natural Earth · 3D: three.js · Type: Nanum Brush Script, Gowun Batang, Cormorant Garamond</p>
+  <footer class="footer" data-theme-bar="dark">
+    <p class="footer-main" data-i18n="footer.main">Made with ink, film and a lot of love, for Mihwa · 2026</p>
+    <button type="button" class="noodle" id="noodle" aria-expanded="false">
+      <svg viewBox="0 0 40 28" aria-hidden="true"><path d="M3 12 H37 C36 21 29 26 20 26 C11 26 4 21 3 12 Z"/><path class="n" d="M10 12 C12 6 15 14 17 7 C19 13 22 5 24 11 C26 6 28 12 30 8"/><path class="n" d="M26 4 L33 11 M30 3 L36 9"/></svg>
+      <span data-i18n="footer.q">Mul or bibim?</span>
+    </button>
+    <p class="noodle-a" id="noodle-a" data-i18n="footer.a" hidden>Mul-naengmyeon. Obviously.</p>
   </footer>
 
-  <div class="cursor" aria-hidden="true"><span class="cursor-dot"></span><span class="cursor-ring"></span></div>
-  <div class="save-sheet" id="save-sheet" role="dialog" aria-modal="true" aria-labelledby="save-hint" hidden>
-    <div class="save-card">
-      <img id="save-img" alt="">
-      <p id="save-hint" data-i18n="studio.saveHint">Your painting. Right-click or long-press it to save the image.</p>
-      <div class="save-actions">
-        <a class="save-download" id="save-download" download="mihwa-ink-painting.png" href="#" data-i18n="studio.download">Download PNG</a>
-        <button type="button" class="save-close" id="save-close" data-i18n="studio.close">Close</button>
-      </div>
+  <!-- lightbox -->
+  <div class="lb" id="lightbox" role="dialog" aria-modal="true" hidden>
+    <div class="lb-stage">
+      <figure class="lb-fig">
+        <img class="lb-img" alt="">
+        <figcaption><span class="lb-num mono"></span><span class="lb-cap"></span></figcaption>
+      </figure>
     </div>
+    <button type="button" class="lb-btn lb-prev" data-i18n-label="lb.prev" aria-label="Previous photo">‹</button>
+    <button type="button" class="lb-btn lb-next" data-i18n-label="lb.next" aria-label="Next photo">›</button>
+    <button type="button" class="lb-btn lb-close" data-i18n-label="lb.close" aria-label="Close">×</button>
   </div>
 
-  <p class="webgl-fallback" hidden data-i18n="fallback">Your browser could not start WebGL, so the 3D landscape is resting. Everything else still works.</p>
+  <div class="loupe" aria-hidden="true"></div>
+  <div class="cursor" aria-hidden="true"><span class="cursor-dot"></span><span class="cursor-ring"></span></div>
+  <p class="webgl-fallback" hidden data-i18n="fallback">Your browser could not start WebGL.</p>
 
   <script type="module" src="js/main.js"></script>
 </body>
