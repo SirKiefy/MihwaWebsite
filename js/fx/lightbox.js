@@ -1,25 +1,34 @@
-// Full-screen viewer: opens from where you clicked, like light spreading.
+// Full-screen viewer on hanji. Opens from where you clicked; shows her photo
+// in colour or as its ink painting.
 export function mountLightbox(el, photos, { caption, onChange } = {}) {
-  const img = el.querySelector('.lb-img');
+  const ink = el.querySelector('.lb-img--ink');
+  const col = el.querySelector('.lb-img--col');
   const cap = el.querySelector('.lb-cap');
   const num = el.querySelector('.lb-num');
+  const toggles = [...el.querySelectorAll('.lb-toggle button')];
+  const NUM = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十', '十一', '十二', '十三', '十四', '十五', '十六'];
   let index = 0, lastFocus = null;
+
+  function view(v) {
+    el.dataset.view = v;
+    toggles.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.view === v)));
+  }
+  toggles.forEach((b) => b.addEventListener('click', () => view(b.dataset.view)));
 
   function show(i) {
     index = (i + photos.length) % photos.length;
     const ph = photos[index];
-    img.src = ph.url;
-    img.classList.toggle('is-placeholder', !!ph.placeholder);
-    num.textContent = `${String(index + 1).padStart(2, '0')} / ${String(photos.length).padStart(2, '0')}`;
+    ink.src = ph.inkUrl;
+    col.src = ph.url;
+    num.textContent = NUM[index] || String(index + 1);
     cap.textContent = caption ? caption(index) : '';
     onChange && onChange(index);
   }
-  function open(i, e) {
+  function open(i, e, v = 'col') {
     lastFocus = document.activeElement;
-    const x = e && e.clientX != null ? e.clientX : innerWidth / 2;
-    const y = e && e.clientY != null ? e.clientY : innerHeight / 2;
-    el.style.setProperty('--ox', `${x}px`);
-    el.style.setProperty('--oy', `${y}px`);
+    el.style.setProperty('--ox', `${e && e.clientX != null ? e.clientX : innerWidth / 2}px`);
+    el.style.setProperty('--oy', `${e && e.clientY != null ? e.clientY : innerHeight / 2}px`);
+    view(v);
     show(i);
     el.hidden = false;
     el.classList.remove('is-open');
@@ -31,7 +40,7 @@ export function mountLightbox(el, photos, { caption, onChange } = {}) {
   function close() {
     el.classList.remove('is-open');
     document.documentElement.classList.remove('lb-lock');
-    setTimeout(() => { el.hidden = true; }, 450);
+    setTimeout(() => { el.hidden = true; }, 500);
     lastFocus && lastFocus.focus && lastFocus.focus({ preventScroll: true });
   }
   el.querySelector('.lb-close').addEventListener('click', close);

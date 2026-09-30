@@ -1,32 +1,36 @@
 # 미화 · Mihwa
 
-A roll of film for Mihwa, framed in Korean ink. It's an interactive website about her: her portrait, her prints, her poses and her colours, with a nod to her two homes and a letter at the end.
+An album in ink for Mihwa. The whole site is one sheet of hanji paper. Every photo of her is repainted as a Korean ink painting (수묵화), and ink spreads into each part of the page as you scroll to it.
 
-| Scene | What happens |
+| Leaf | What happens |
 | --- | --- |
-| **Her portrait, in ink** | Her photo appears inside an ink bloom on hanji paper. A real GPU fluid simulation carries ink through the water around her. Moving the cursor or a finger stirs it, and clicking drops more ink. |
-| **Darkroom** | A 3D walk along a drying line under the red safelight. Each print develops as you reach it (shadows first, like real paper in the tray), with its caption pencilled in the margin. Click a print to open it. |
-| **Contact sheet** | Her poses on film strips on a light table. A loupe follows the cursor, and red grease-pencil circles and handwritten notes mark the favourites. |
-| **Her palette** | Her colours, pulled automatically from her photos with k-means, plus a card of field notes about her. |
-| **Two homes** | An ink globe with a red thread between Seoul and Paris, and live clocks for both cities. |
-| **Instagram** | Her handle, a short bio, and a 3×3 grid from her photos, linking to [@mulnaengmyeonn](https://www.instagram.com/mulnaengmyeonn/). |
-| **A letter** | A personal note, sealed with a 美花 stamp. |
+| **미화 · her portrait** | Her photo, repainted in ink, inside an ink bloom. A GPU fluid simulation carries ink through the water around her: move the cursor or a finger to stir it, click to drop more. |
+| **초상 · portraits** | Her photos on an eight-panel folding screen (병풍) with indigo silk mounts. It unfolds as you scroll. Hover a panel and her real colours seep back into the ink. Click to open it. |
+| **생각 · in her words** | Things she says, set in brush lettering with a seal each. |
+| **추억 · best memories** | A handscroll that unrolls as you scroll, with each memory painted on a fan. |
+| **길 · her path** | Bachelor's → Master's → diplomacy → human rights & NGOs → fashion, joined by one brush stroke that zigzags between the seals. |
+| **멋 · her style** | Her colours, pulled from her photos and ground like pigments into little dishes. Each gets a traditional Korean colour name. Beside them is a card about her. |
+| **두 집 · two homes** | An ink globe with a red thread between Seoul and Paris, plus live clocks for both cities. |
+| **Instagram** | Her handle, bio and a 3×3 grid (ink first, colour on hover), linking to [@mulnaengmyeonn](https://www.instagram.com/mulnaengmyeonn/). |
+| **편지 · a letter** | A personal note, sealed with a 美花 stamp. |
 
-Everything is in **English, French and Korean** (toggle at the top right). Sound is off by default. The camera button turns on shutter clicks and soft gayageum plucks.
+Everything is in **English, French and Korean** (toggle at the top right). Sound is off by default. The button next to the languages turns on soft gayageum plucks.
 
-## ✎ Add her photos
+## ✎ Make it hers
 
-1. Put the photos in the `photos/` folder (JPG or PNG; about 1600 px on the long side is plenty).
-2. Open `js/her.js` and write each file name in `PHOTOS`, for example `src: 'photos/01.jpg'`.
-3. Rewrite the captions to fit each photo (English, French and Korean).
-4. Optionally choose:
-   - `heroPhoto`: which photo appears in the ink at the top.
-   - `favourites`: which ones get circled on the contact sheet.
-   - `bio` and `notes`: the short lines about her.
+Everything about her lives in **`js/her.js`**:
 
-Any photo left as `src: ''` shows a film-style placeholder, so the site always looks complete.
+- **`PHOTOS`**: put image files in `photos/` and write each name as `src: 'photos/01.jpg'` (JPG or PNG, about 1600 px on the long side). Rewrite the captions to fit each photo. An empty `src` shows a soft placeholder portrait.
+- **`heroPhoto`**: which photo is painted at the top.
+- **`THOUGHTS`**: her words. The four there now are *examples* (marked `example: true`). Replace them with things she actually says.
+- **`MEMORIES`**: your best memories together, each with a photo (`photo` is its index in `PHOTOS`), an optional date in `when`, a title and a few lines. These are *examples* too.
+- **`PATH`**: her path, from now to where she's going.
+- **`bio`** and **`notes`**: the short lines about her.
+- **`LETTER`**: the letter at the end. Write your own words there.
 
-The **letter** is in `LETTER` in the same file. Write your own words there.
+Every text has an English (`en`), French (`fr`) and Korean (`ko`) version.
+
+The ink paintings are made in the browser from whatever photos you add, so nothing needs to be prepared by hand.
 
 ## Run it locally
 
@@ -48,23 +52,23 @@ If the repository is public, her photos will be public too.
 
 ## How it's made
 
-- **Ink** (`js/fx/fluid.js`): a WebGL2 stable-fluids simulation (advection, vorticity confinement, pressure projection) at half-float precision, rendered as an ink wash with pigment pooling at the edges. Her photo is framed by an animated bloom whose edge the water can push around.
-- **Darkroom** (`js/fx/reel.js`): three.js, with custom shaders for the hand-brushed emulsion edge, the developing curve, the paper curl and the film grain. Rendered with antialiasing at full device resolution.
-- **Contact sheet** (`js/fx/sheet.js`): the grease-pencil loops are generated SVG paths drawn with a stroke animation and a waxy filter.
-- **Palette** (`js/fx/palette.js`): k-means clustering over downsampled pixels from all her photos.
+- **Photo → ink painting** (`js/fx/inkify.js`): a Kuwahara filter to flatten the photo into brush-sized patches, banded ink washes with noisy edges, pigment pooling where washes dry, difference-of-Gaussians brush lines with dry-brush breaks, granulation and bleed, all on hanji.
+- **The sheet of hanji** (`js/fx/inkfield.js`): one WebGL2 layer behind the page paints the paper and every mark on it (blooms, ensō circles, brush strokes and misty mountain ridges). Marks are anchored to `<i class="ink">` elements in the layout and paint themselves in when they scroll into view.
+- **Ink hero** (`js/fx/fluid.js`): a stable-fluids simulation (advection, vorticity confinement, pressure projection), rendered as ink in water.
+- **Folding screen** (`js/fx/screen.js`): three.js with custom shaders for the silk mount, the painting, the colour wash on hover and the brush captions.
+- **Pigments** (`js/fx/palette.js`): k-means over her photos, matched to traditional colour names in CIE Lab.
 - **Globe**: Natural Earth 1:50m coastlines (public domain) in an ink-wash shader.
-- Every canvas only runs while it's on screen.
-- Respects `prefers-reduced-motion`, works with keyboard and touch, and falls back gracefully without WebGL.
+- Every canvas only runs while it's on screen. The site respects `prefers-reduced-motion`, works with keyboard and touch, and falls back gracefully without WebGL.
 
 ```
 index.html
 css/style.css
 js/
-  her.js           ✎ her photos, captions, notes and the letter
+  her.js           ✎ everything about her: photos, words, memories, path, letter
   i18n.js          interface text (EN / FR / KO)
-  main.js          wiring: language, scroll, lightbox, sections
-  audio.js         shutter clicks and gayageum plucks
-  fx/              ink fluid, darkroom, contact sheet, palette, lightbox, globe
+  main.js          wiring: language, scroll, sections, lightbox
+  audio.js         gayageum plucks
+  fx/              ink painting, ink field, fluid, folding screen, palette, lightbox, globe
   scene/           globe and shared shader code
   ink/brush.js     seal stamp and small ink helpers
 photos/            her photos go here

@@ -1,14 +1,17 @@
 // ─────────────────────────────────────────────────────────────────────────────
-//  Mihwa · 미화 — a roll of film, framed in ink.
+//  Mihwa · 미화 — an album in ink.
+//  Every photo is repainted as an ink painting, and each part of the page
+//  (her words, her memories, her path, her colours) sits on one sheet of hanji
+//  where the ink spreads in as you arrive.
 // ─────────────────────────────────────────────────────────────────────────────
 import { LANGS, STRINGS } from './i18n.js';
-import { HER, PHOTOS, LETTER } from './her.js';
+import { HER, PHOTOS, LETTER, THOUGHTS, MEMORIES, PATH } from './her.js';
 import { loadPhotos } from './fx/placeholder.js';
-import { mountSheet, pencilLoop } from './fx/sheet.js';
+import { inkify } from './fx/inkify.js';
 import { extractPalette } from './fx/palette.js';
 import { mountLightbox } from './fx/lightbox.js';
-import { makeGrainDataURL, makeDeckle } from './scene/inktex.js';
-import { setSound, pluck, phrase, shutter } from './audio.js';
+import { makeGrainDataURL } from './scene/inktex.js';
+import { setSound, pluck, phrase } from './audio.js';
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -17,16 +20,30 @@ const finePointer = matchMedia('(hover: hover) and (pointer: fine)').matches;
 const mobile = matchMedia('(max-width: 820px), (pointer: coarse)').matches;
 const root = document.documentElement;
 const IG_URL = `https://www.instagram.com/${HER.instagram}/`;
+const NUM = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十', '十一', '十二'];
 
 const store = {
   get(k) { try { return localStorage.getItem(k); } catch { return null; } },
   set(k, v) { try { localStorage.setItem(k, v); } catch { /* private mode */ } },
 };
 
-// ─────────────────────────── paper, grain & ink edges ───────────────────────────
+function el(tag, cls, text) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text != null) e.textContent = text;
+  return e;
+}
+/** an anchor for the ink field: <i class="ink" data-ink="…"> */
+function ink(type, style, data = {}) {
+  const e = document.createElement('i');
+  e.className = 'ink';
+  e.dataset.ink = type;
+  Object.entries(data).forEach(([k, v]) => { e.dataset[k] = String(v); });
+  Object.assign(e.style, style);
+  return e;
+}
+
 root.style.setProperty('--grain', `url(${makeGrainDataURL()})`);
-root.style.setProperty('--edge-dark-top', makeDeckle('#0e0a09', false));
-root.style.setProperty('--edge-dark-bottom', makeDeckle('#0e0a09', true));
 
 // ─────────────────────────── language ───────────────────────────
 function guessLang() {
@@ -42,19 +59,20 @@ const onLang = [];
 
 function applyLang() {
   root.lang = lang;
-  $$('[data-i18n]').forEach((el) => {
-    const k = el.dataset.i18n;
-    if (k === 'letter.sign') el.textContent = LETTER[lang].sign;
-    else if (k === 'hero.hint' && !finePointer) el.textContent = t('hero.hint.touch');
-    else el.textContent = t(k);
+  $$('[data-i18n]').forEach((e) => {
+    const k = e.dataset.i18n;
+    if (k === 'letter.sign') e.textContent = LETTER[lang].sign;
+    else if (k === 'hero.hint' && !finePointer) e.textContent = t('hero.hint.touch');
+    else e.textContent = t(k);
   });
-  $$('[data-i18n-label]').forEach((el) => el.setAttribute('aria-label', t(el.dataset.i18nLabel)));
-  $$('[data-i18n-title]').forEach((el) => { el.title = t(el.dataset.i18nTitle); el.setAttribute('aria-label', t(el.dataset.i18nTitle)); });
+  $$('[data-i18n-label]').forEach((e) => e.setAttribute('aria-label', t(e.dataset.i18nLabel)));
+  $$('[data-i18n-title]').forEach((e) => { e.title = t(e.dataset.i18nTitle); e.setAttribute('aria-label', t(e.dataset.i18nTitle)); });
   const body = $('[data-i18n-html="letter.body"]');
   body.innerHTML = '';
-  LETTER[lang].body.forEach((para) => { const p = document.createElement('p'); p.textContent = para; body.appendChild(p); });
+  LETTER[lang].body.forEach((para) => body.appendChild(el('p', null, para)));
   $$('.lang button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.lang === lang)));
   onLang.forEach((fn) => fn(lang));
+  requestAnimationFrame(layoutAll);
 }
 $$('.lang button').forEach((b) => b.addEventListener('click', () => {
   lang = b.dataset.lang;
@@ -69,13 +87,8 @@ soundBtn.addEventListener('click', () => {
   const on = soundBtn.getAttribute('aria-pressed') !== 'true';
   soundBtn.setAttribute('aria-pressed', String(on));
   setSound(on);
-  if (on) shutter();
+  if (on) phrase(2);
 });
-
-// ─────────────────────────── the film leader ───────────────────────────
-const leaderNum = $('.leader-num');
-let count = 3;
-const leaderTimer = setInterval(() => { count = count > 1 ? count - 1 : 3; leaderNum.textContent = count; }, 1000);
 
 // ─────────────────────────── static bits ───────────────────────────
 $('#hero-ig').href = IG_URL;
@@ -83,19 +96,16 @@ $('#hero-ig').textContent = `@${HER.instagram}`;
 $('#ig-follow').href = IG_URL;
 $('#ig-avatar').href = IG_URL;
 $('#ig-handle').textContent = `@${HER.instagram}`;
-$('#ig-ring-path').setAttribute('d', pencilLoop(60, 60, 55, 55, 21));
-$('#reel').style.height = `${PHOTOS.length * 56 + 100}vh`;
 
 // ─────────────────────────── cursor ───────────────────────────
-const cursor = $('.cursor');
-const cDot = $('.cursor-dot'), cRing = $('.cursor-ring');
-let mx = innerWidth / 2, my = innerHeight / 2, rx = mx, ry = my;
 if (finePointer) {
+  const cursor = $('.cursor'), cDot = $('.cursor-dot'), cRing = $('.cursor-ring');
+  let mx = innerWidth / 2, my = innerHeight / 2, rx = mx, ry = my;
   document.body.classList.add('has-cursor');
   addEventListener('pointermove', (e) => { mx = e.clientX; my = e.clientY; cDot.style.transform = `translate3d(${mx}px, ${my}px, 0)`; }, { passive: true });
   const loop = () => { rx += (mx - rx) * 0.2; ry += (my - ry) * 0.2; cRing.style.transform = `translate3d(${rx}px, ${ry}px, 0)`; requestAnimationFrame(loop); };
   loop();
-  document.addEventListener('pointerover', (e) => cursor.classList.toggle('is-hover', !!e.target.closest('a, button, .cf, .ig-tile')));
+  document.addEventListener('pointerover', (e) => cursor.classList.toggle('is-hover', !!e.target.closest('a, button, .fan, .ig-tile, #screen-gl')));
 }
 
 // ─────────────────────────── clocks ───────────────────────────
@@ -121,21 +131,185 @@ function tickClocks() {
 onLang.push(tickClocks);
 setInterval(tickClocks, 15000);
 
-// ─────────────────────────── field notes & bio ───────────────────────────
+// ─────────────────────────── about her & bio ───────────────────────────
 onLang.push(() => {
   const dl = $('#notes');
   dl.innerHTML = '';
   HER.notes.forEach((n) => {
-    const row = document.createElement('div');
-    const dt = document.createElement('dt'); dt.textContent = n.k[lang];
-    const dd = document.createElement('dd'); dd.textContent = n.v[lang];
-    row.append(dt, dd);
+    const row = el('div');
+    row.append(el('dt', null, n.k[lang]), el('dd', null, n.v[lang]));
     dl.appendChild(row);
   });
   const bio = $('#ig-bio');
   bio.innerHTML = '';
-  (HER.bio[lang] || []).forEach((line) => { const li = document.createElement('li'); li.textContent = line; bio.appendChild(li); });
+  (HER.bio[lang] || []).forEach((line) => bio.appendChild(el('li', null, line)));
 });
+
+// ─────────────────────────── her words ───────────────────────────
+const quotesEl = $('#quotes');
+const quoteEls = THOUGHTS.map((q, i) => {
+  const fig = el('figure', 'quote');
+  fig.append(
+    ink('bloom', { left: '-4%', top: '0', width: '100%', height: '100%' }, { seed: (2.7 + i * 3.3).toFixed(2), dark: i % 2 ? 0.16 : 0.2, delay: 0.15 }),
+    el('span', 'q-mark', '“'),
+  );
+  const bq = el('blockquote');
+  const seal = el('span', 'seal seal--md', q.seal || '言');
+  seal.setAttribute('aria-hidden', 'true');
+  fig.append(bq, seal);
+  quotesEl.appendChild(fig);
+  return { q, bq };
+});
+onLang.push(() => quoteEls.forEach(({ q, bq }) => { bq.textContent = q[lang] ?? q.en; }));
+
+// ─────────────────────────── her path ───────────────────────────
+const pathEl = $('#path-list');
+const stationEls = PATH.map((s, i) => {
+  const st = el('article', 'station');
+  const seal = el('span', 'seal', s.seal);
+  seal.setAttribute('aria-hidden', 'true');
+  const when = el('p', 'station-when');
+  const h = el('h3');
+  const p = el('p');
+  st.append(seal, when, h, p);
+  pathEl.appendChild(st);
+  return { s, st, seal, when, h, p, i };
+});
+onLang.push(() => stationEls.forEach(({ s, when, h, p }) => {
+  when.textContent = s.when[lang];
+  h.textContent = s.title[lang];
+  p.textContent = s.text[lang];
+}));
+// the brush path is re-drawn to fit wherever the stations end up
+const pathInk = el('div', 'path-ink');
+pathInk.setAttribute('aria-hidden', 'true');
+pathEl.prepend(pathInk);
+let pathKey = '';
+function layoutPath() {
+  const box = pathEl.getBoundingClientRect();
+  const pts = stationEls.map(({ seal }) => {
+    const r = seal.getBoundingClientRect();
+    return { x: r.left + r.width / 2 - box.left, y: r.top + r.height / 2 - box.top };
+  });
+  const key = pts.map((p) => `${p.x.toFixed(0)},${p.y.toFixed(0)}`).join('|');
+  if (key === pathKey) return false;
+  pathKey = key;
+  pathInk.innerHTML = '';
+  stationEls.forEach(({ st }, i) => {
+    const r = st.getBoundingClientRect();
+    pathInk.appendChild(ink('bloom', {
+      left: `${r.left - box.left - 30}px`, top: `${r.top - box.top - 40}px`, width: `${r.width + 60}px`, height: `${r.height + 80}px`,
+    }, { seed: (1.3 + i * 2.9).toFixed(2), dark: mobile ? 0.12 : 0.17, delay: 0.1 }));
+  });
+  for (let i = 0; i < pts.length - 1; i++) {
+    const a = pts[i], b = pts[i + 1];
+    const down = b.x >= a.x;
+    pathInk.appendChild(ink('line', {
+      left: `${Math.min(a.x, b.x)}px`, top: `${a.y}px`, width: `${Math.max(1, Math.abs(b.x - a.x))}px`, height: `${b.y - a.y}px`,
+    }, { dir: down ? 'down' : 'back', px: mobile ? 9 : 13, bow: (i % 2 ? -0.8 : 0.8) * (Math.abs(b.x - a.x) < 20 ? 0.3 : 1), dark: 0.9, dry: 1, seed: (3.1 + i * 1.7).toFixed(2), dur: 1.3, delay: 0.3 }));
+  }
+  const last = stationEls[stationEls.length - 1].st.getBoundingClientRect();
+  pathInk.appendChild(ink('range', {
+    left: '-8%', top: `${last.bottom - box.top + 10}px`, width: '116%', height: '200px',
+  }, { seed: 9.4, dark: 0.34, h: 0.7 }));
+  return true;
+}
+
+// ─────────────────────────── memories: the handscroll ───────────────────────────
+const memSec = $('#memories');
+const memTrack = $('#mem-track');
+const memWindow = $('.scroll-window');
+memSec.style.height = `${MEMORIES.length * 75 + 110}vh`;
+const memEls = MEMORIES.map((m, i) => {
+  const card = el('article', 'memory');
+  const fan = el('button', 'fan');
+  fan.type = 'button';
+  const imInk = el('img', 'inked'); imInk.alt = '';
+  const imCol = el('img', 'col'); imCol.alt = '';
+  fan.append(imInk, imCol);
+  fan.insertAdjacentHTML('beforeend', '<svg class="fan-edge" viewBox="0 0 1 1" preserveAspectRatio="none" aria-hidden="true"><path d="M0.02 0.36 A0.66 0.66 0 0 1 0.98 0.36 L0.73 0.98 A0.3 0.3 0 0 0 0.27 0.98 Z"/></svg>');
+  const when = el('p', 'memory-when');
+  const h = el('h3');
+  const p = el('p');
+  card.append(fan, when, h, p);
+  memTrack.appendChild(card);
+  return { m, card, fan, imInk, imCol, when, h, p, i };
+});
+onLang.push(() => memEls.forEach(({ m, when, h, p, i, fan }) => {
+  when.textContent = m.when?.[lang] || `其${NUM[i] || i + 1}`;
+  h.textContent = m.title[lang];
+  p.textContent = m.text[lang];
+  fan.setAttribute('aria-label', m.title[lang]);
+}));
+let memSpan = 0;
+function layoutMemories() {
+  if (!memEls.length) return;
+  const ww = memWindow.clientWidth;
+  const cw = memEls[0].card.getBoundingClientRect().width || 320;
+  const gap = Math.max(40, Math.min(140, ww * 0.08));
+  const pad = Math.max(24, (ww - cw) * (mobile ? 0.5 : 0.12));
+  memEls.forEach(({ card }, i) => { card.style.left = `${pad + i * (cw + gap)}px`; });
+  const width = pad * 2 + memEls.length * cw + (memEls.length - 1) * gap;
+  memTrack.style.width = `${width}px`;
+  memSpan = Math.max(0, width - ww);
+  updateMemories();
+}
+function updateMemories() {
+  const r = memSec.getBoundingClientRect();
+  const p = Math.max(0, Math.min(1, -r.top / Math.max(1, r.height - innerHeight)));
+  memTrack.style.transform = `translate3d(${(-p * memSpan).toFixed(1)}px, 0, 0)`;
+}
+
+// ─────────────────────────── her colours, as pigments ───────────────────────────
+// traditional Korean colour names; each of her colours is matched to the nearest
+const PIGMENTS = [
+  { ko: '먹색', en: 'Ink black', fr: 'Noir d’encre', rgb: [28, 26, 23] },
+  { ko: '주홍', en: 'Vermilion', fr: 'Vermillon', rgb: [217, 80, 43] },
+  { ko: '황토', en: 'Yellow ochre', fr: 'Ocre jaune', rgb: [200, 150, 62] },
+  { ko: '쪽빛', en: 'Indigo', fr: 'Indigo', rgb: [43, 74, 122] },
+  { ko: '비색', en: 'Celadon', fr: 'Céladon', rgb: [143, 181, 163] },
+  { ko: '연분홍', en: 'Blossom pink', fr: 'Rose pâle', rgb: [240, 183, 176] },
+  { ko: '소색', en: 'Raw silk', fr: 'Soie écrue', rgb: [232, 220, 196] },
+  { ko: '잿빛', en: 'Ash', fr: 'Cendre', rgb: [142, 138, 132] },
+  { ko: '은회색', en: 'Silver grey', fr: 'Gris argent', rgb: [192, 188, 182] },
+  { ko: '미색', en: 'Rice white', fr: 'Blanc de riz', rgb: [243, 236, 216] },
+  { ko: '밤색', en: 'Chestnut', fr: 'Châtaigne', rgb: [107, 62, 38] },
+  { ko: '황갈색', en: 'Tawny', fr: 'Fauve', rgb: [178, 134, 92] },
+  { ko: '자주', en: 'Plum', fr: 'Prune', rgb: [125, 42, 79] },
+  { ko: '녹두', en: 'Mung bean', fr: 'Haricot mungo', rgb: [122, 143, 69] },
+  { ko: '살구', en: 'Apricot', fr: 'Abricot', rgb: [240, 167, 115] },
+];
+// CIE Lab, so that "nearest" means nearest to the eye
+function lab([r, g, b]) {
+  const lin = (c) => { c /= 255; return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; };
+  const R = lin(r), G = lin(g), B = lin(b);
+  const f = (t) => (t > 0.008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116);
+  const x = f((R * 0.4124 + G * 0.3576 + B * 0.1805) / 0.95047);
+  const y = f(R * 0.2126 + G * 0.7152 + B * 0.0722);
+  const z = f((R * 0.0193 + G * 0.1192 + B * 0.9505) / 1.08883);
+  return [116 * y - 16, 500 * (x - y), 200 * (y - z)];
+}
+function nearestPigments(colours) {
+  const d2 = (a, b) => { const A = lab(a), B = lab(b); return (A[0] - B[0]) ** 2 + (A[1] - B[1]) ** 2 + (A[2] - B[2]) ** 2; };
+  const lum = (c) => lab(c)[0];
+  const used = new Map();
+  return colours.map((c) => {
+    const ranked = PIGMENTS.map((p) => ({ p, d: d2(c.rgb, p.rgb) })).sort((a, b) => a.d - b.d);
+    // prefer a pigment not used yet, unless it is a much worse match
+    const free = ranked.find((r) => !used.has(r.p));
+    const pick = free && free.d < ranked[0].d * 2 + 60 ? free : ranked[0];
+    const n = used.get(pick.p) || 0;
+    used.set(pick.p, n + 1);
+    if (!n) return pick.p;
+    // the same pigment again: name it by shade, 연 (pale) or 진 (deep)
+    const pale = lum(c.rgb) > lum(pick.p.rgb);
+    return {
+      ko: (pale ? '연' : '진') + pick.p.ko,
+      en: `${pale ? 'Pale' : 'Deep'} ${pick.p.en.toLowerCase()}`,
+      fr: `${pick.p.fr} ${pale ? 'pâle' : 'profond'}`,
+    };
+  });
+}
 
 // ─────────────────────────── footer: the eternal question ───────────────────────────
 $('#noodle').addEventListener('click', (e) => {
@@ -145,122 +319,165 @@ $('#noodle').addEventListener('click', (e) => {
   if (open) phrase(5);
 });
 
-// ─────────────────────────── the seal ───────────────────────────
-const seal = $('#letter-seal');
+// ─────────────────────────── the seal on the letter ───────────────────────────
+const letterSeal = $('#letter-seal');
 new IntersectionObserver((es, io) => es.forEach((e) => {
-  if (e.isIntersecting) { seal.classList.add('is-stamped'); setTimeout(() => pluck(0, { gain: 0.24 }), 550); io.disconnect(); }
-}), { threshold: 0.5 }).observe(seal);
+  if (e.isIntersecting) { letterSeal.classList.add('is-stamped'); setTimeout(() => pluck(0, { gain: 0.24 }), 550); io.disconnect(); }
+}), { threshold: 0.5 }).observe(letterSeal);
+
+// seals press into the paper as they arrive
+root.classList.add('js-seals');
+const sealIO = new IntersectionObserver((es) => es.forEach((e) => {
+  if (e.isIntersecting) { e.target.classList.add('is-pressed'); sealIO.unobserve(e.target); }
+}), { threshold: 0.6 });
+$$('main .seal:not(.letter-seal)').forEach((s) => sealIO.observe(s));
 
 applyLang();
 
-// ─────────────────────────── boot: fonts → photos → scenes ───────────────────────────
+// ─────────────────────────── boot: fonts → photos → ink → scenes ───────────────────────────
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+const idle = () => new Promise((r) => (window.requestIdleCallback ? requestIdleCallback(() => r(), { timeout: 60 }) : setTimeout(r, 0)));
 const fonts = document.fonts
-  ? Promise.race([Promise.all([document.fonts.load('500 20px "DM Mono"'), document.fonts.load('40px "Nanum Pen Script"', '01. the pose 그 포즈')]), wait(2500)])
+  ? Promise.race([Promise.all([
+    document.fonts.load('40px "Nanum Brush Script"', '미화 초상 생각'),
+    document.fonts.load('italic 40px "Instrument Serif"', 'Mihwa'),
+  ]), wait(2500)])
   : Promise.resolve();
 
-let ink = null, reel = null, homes = null, lightbox = null, photos = [];
+let field = null, hero = null, screen = null, homes = null, lightbox = null, photos = [];
+
+function layoutAll() {
+  layoutMemories();
+  const moved = layoutPath();
+  if (field && moved) field.scan();
+}
 
 async function boot() {
   await fonts.catch(() => {});
   photos = await loadPhotos(PHOTOS, t('placeholder'));
-  const hero = photos[HER.heroPhoto] || photos[0];
+
+  // repaint every photo in ink (on the CPU, one at a time so the page stays responsive)
+  for (const ph of photos) {
+    await idle();
+    const src = ph.image || ph.canvas;
+    const c = inkify(src, { max: mobile ? 700 : 1000, color: ph.placeholder ? 0.05 : 0.14, seed: ph.index + 1 });
+    ph.inkCanvas = c;
+    ph.inkUrl = c.toDataURL('image/jpeg', 0.9);
+  }
+  const heroPh = photos[HER.heroPhoto] || photos[0];
 
   lightbox = mountLightbox($('#lightbox'), photos, {
     caption: (i) => PHOTOS[i].caption?.[lang] ?? '',
-    onChange: () => shutter({ gain: 0.2 }),
+    onChange: () => pluck(Math.floor(Math.random() * 6) + 2, { gain: 0.1 }),
   });
   onLang.push(() => lightbox.refresh());
-  const open = (i, e) => lightbox.open(i, e);
+  const open = (i, e, v) => lightbox.open(i, e, v);
 
-  // hero: her portrait in ink
+  // memories: each one painted on a fan
+  memEls.forEach(({ m, fan, imInk, imCol }) => {
+    const ph = photos[m.photo] || photos[0];
+    imInk.src = ph.inkUrl;
+    imCol.src = ph.url;
+    fan.addEventListener('click', (e) => open(ph.index, e, 'ink'));
+  });
+
+  // her colours, ground as pigments
+  const pal = extractPalette(photos, 6);
+  const names = nearestPigments(pal);
+  const dishes = $('#dishes');
+  const dishEls = pal.map((c, i) => {
+    const d = el('figure', 'dish');
+    const bowl = el('div', 'dish-bowl');
+    bowl.style.setProperty('--c', c.hex);
+    const cap = el('figcaption');
+    const name = el('span', 'dish-name', names[i].ko);
+    const tr = el('span', 'dish-en');
+    cap.append(name, tr, el('span', 'dish-hex', c.hex.toLowerCase()));
+    d.append(bowl, cap);
+    dishes.appendChild(d);
+    return { tr, p: names[i] };
+  });
+  const dishText = () => dishEls.forEach(({ tr, p }) => { tr.textContent = lang === 'ko' ? '' : p[lang]; });
+  dishText();
+  onLang.push(dishText);
+
+  // instagram card: ink first, colour on hover
+  $('#ig-avatar-img').src = heroPh.url;
+  const grid = $('#ig-grid');
+  photos.slice(0, 9).forEach((ph, i) => {
+    const b = el('button', 'ig-tile');
+    b.type = 'button';
+    const a = el('img', 'inked'); a.src = ph.inkUrl; a.alt = ''; a.loading = 'lazy';
+    const c = el('img', 'col'); c.src = ph.url; c.alt = ''; c.loading = 'lazy';
+    b.append(a, c);
+    b.addEventListener('click', (e) => open(i, e, 'col'));
+    grid.appendChild(b);
+  });
+  const tileCaps = () => $$('.ig-tile', grid).forEach((b, i) => b.setAttribute('aria-label', PHOTOS[i].caption?.[lang] ?? ''));
+  tileCaps();
+  onLang.push(tileCaps);
+
+  layoutAll();
+
+  // the sheet of hanji, and all the ink on it
+  try {
+    const { createInkField } = await import('./fx/inkfield.js');
+    field = createInkField($('#ink-field'), { reduceMotion });
+  } catch (err) { console.warn('ink field unavailable', err); field = null; }
+  if (!field) $('#ink-field').hidden = true;
+
+  // hero: her portrait, in moving ink
   try {
     const { createInkHero } = await import('./fx/fluid.js');
-    ink = createInkHero($('#ink-gl'), { source: hero.image || hero.canvas, reduceMotion, mobile, color: hero.placeholder ? 0.12 : 0.62 });
-  } catch (err) { console.warn('ink hero unavailable', err); ink = null; }
-  if (ink) {
+    hero = createInkHero($('#ink-gl'), { source: heroPh.inkCanvas, reduceMotion, mobile, color: 1 });
+  } catch (err) { console.warn('ink hero unavailable', err); hero = null; }
+  if (hero) {
     const heroLayout = () => {
       const portrait = innerWidth / innerHeight < 0.9;
-      ink.setLayout(portrait
-        ? { rect: [0.02, 0.36, 0.98, 0.99], blob: [0.5, 0.68], blobR: [0.5, 0.38] }
-        : { rect: [0.38, 0.03, 0.97, 0.97], blob: [0.675, 0.5], blobR: [0.56, 0.6] });
+      hero.setLayout(portrait
+        ? { rect: [0.02, 0.3, 0.98, 0.99], blob: [0.5, 0.65], blobR: [0.5, 0.4] }
+        : { rect: [0.4, 0.03, 0.97, 0.97], blob: [0.68, 0.5], blobR: [0.56, 0.6] });
     };
     heroLayout();
     addEventListener('resize', heroLayout);
     const heroSec = $('#hero');
-    heroSec.addEventListener('pointermove', (e) => ink.pointer(e.clientX, e.clientY), { passive: true });
+    heroSec.addEventListener('pointermove', (e) => hero.pointer(e.clientX, e.clientY), { passive: true });
     heroSec.addEventListener('pointerdown', (e) => {
       if (e.target.closest('a, button')) return;
-      ink.burst(e.clientX, e.clientY);
+      hero.burst(e.clientX, e.clientY);
       pluck(Math.floor(Math.random() * 10), { pan: (e.clientX / innerWidth) * 1.6 - 0.8, gain: 0.16 });
     });
   } else {
     $('#ink-gl').hidden = true;
     const img = $('#hero-fallback');
-    img.src = hero.url;
+    img.src = heroPh.inkUrl;
     img.hidden = false;
   }
 
-  // darkroom
+  // the folding screen of portraits
   try {
-    const { createReel } = await import('./fx/reel.js');
-    reel = createReel($('#reel-gl'), photos, {
-      reduceMotion, mobile,
-      onOpen: open,
-      onFrame: (i) => {
-        $('#rc-num').textContent = String(i + 1).padStart(2, '0');
-        $('#rc-cap').textContent = PHOTOS[i].caption?.[lang] ?? '';
-      },
+    const { createScreen } = await import('./fx/screen.js');
+    screen = createScreen($('#screen-gl'), photos, { reduceMotion, onOpen: (i, e) => open(i, e, 'col') });
+  } catch (err) { console.warn('folding screen unavailable', err); screen = null; }
+  if (screen) {
+    screen.setCaptions(lang);
+    onLang.push((l) => screen.setCaptions(l));
+  } else {
+    // no WebGL: show the ink paintings as a simple album instead
+    const sec = $('#screen');
+    sec.classList.add('is-flat');
+    const flat = el('div', 'screen-flat');
+    photos.slice(0, 8).forEach((ph, i) => {
+      const b = el('button', 'ig-tile');
+      b.type = 'button';
+      const a = el('img', 'inked'); a.src = ph.inkUrl; a.alt = '';
+      const c = el('img', 'col'); c.src = ph.url; c.alt = '';
+      b.append(a, c);
+      b.addEventListener('click', (e) => open(i, e, 'col'));
+      flat.appendChild(b);
     });
-  } catch (err) { console.warn('darkroom unavailable', err); reel = null; }
-  $('#rc-of').textContent = `/ ${String(photos.length).padStart(2, '0')}`;
-  if (reel) {
-    reel.setCaptions(lang);
-    onLang.push((l) => { reel.setCaptions(l); const n = Number($('#rc-num').textContent) - 1; $('#rc-cap').textContent = PHOTOS[n]?.caption?.[l] ?? ''; });
+    $('#screen .sticky').appendChild(flat);
   }
-
-  // contact sheet
-  const sheet = mountSheet($('#contact'), photos, { favourites: HER.favourites, notes: () => t('sheet.notes'), onOpen: open, fine: finePointer });
-  onLang.push(() => sheet.redraw());
-
-  // her palette
-  const pal = extractPalette(photos, 6);
-  const palEl = $('#palette');
-  const bar = document.createElement('div');
-  bar.className = 'pal-bar';
-  const chips = document.createElement('div');
-  chips.className = 'pal-chips';
-  pal.forEach((c, i) => {
-    const s = document.createElement('span');
-    s.style.background = c.hex;
-    s.style.flexGrow = String(c.share);
-    bar.appendChild(s);
-    const chip = document.createElement('div');
-    chip.className = 'chip';
-    chip.innerHTML = `<div class="chip-swatch" style="background:${c.hex}"></div><span class="chip-name">${HER.name.latin} ${String(i + 1).padStart(2, '0')}</span><span class="chip-hex">${c.hex}</span><span class="chip-share"></span>`;
-    chips.appendChild(chip);
-  });
-  palEl.append(bar, chips);
-  const shares = () => $$('.chip-share', palEl).forEach((el, i) => { el.textContent = `${Math.round(pal[i].share * 100)}% ${t('style.share')}`; });
-  shares();
-  onLang.push(shares);
-
-  // instagram card
-  $('#ig-avatar-img').src = hero.url;
-  const grid = $('#ig-grid');
-  photos.slice(0, 9).forEach((ph, i) => {
-    const b = document.createElement('button');
-    b.type = 'button';
-    b.className = 'ig-tile';
-    const img = document.createElement('img');
-    img.src = ph.url; img.alt = ''; img.loading = 'lazy';
-    b.appendChild(img);
-    b.addEventListener('click', (e) => open(i, e));
-    grid.appendChild(b);
-  });
-  const tileCaps = () => $$('.ig-tile', grid).forEach((b, i) => { const c = PHOTOS[i].caption?.[lang] ?? ''; b.dataset.cap = c; b.setAttribute('aria-label', c); });
-  tileCaps();
-  onLang.push(tileCaps);
 
   // two homes
   try {
@@ -270,54 +487,58 @@ async function boot() {
   if (homes) {
     const labelsEl = $('#globe-labels');
     const labels = [SEOUL, PARIS].map((p) => {
-      const el = document.createElement('div');
-      el.className = 'glabel';
-      el.innerHTML = '<span></span>';
-      labelsEl.appendChild(el);
-      return { p, el, span: el.firstChild };
+      const g = el('div', 'glabel');
+      const span = el('span');
+      g.appendChild(span);
+      labelsEl.appendChild(g);
+      return { p, g, span };
     });
-    const labelText = () => labels.forEach(({ p, span }) => { span.innerHTML = ''; span.append(p.name[lang === 'ko' ? 'en' : lang]); const k = document.createElement('span'); k.className = 'ko'; k.textContent = p.name.ko; span.appendChild(k); });
+    const labelText = () => labels.forEach(({ p, span }) => {
+      span.textContent = p.name[lang === 'ko' ? 'en' : lang];
+      span.appendChild(el('span', 'ko', p.name.ko));
+    });
     labelText();
     onLang.push(labelText);
     homes.onFrame((proj) => proj.forEach((m, i) => {
       const L = labels[i];
       if (!L) return;
-      L.el.classList.toggle('is-visible', m.facing > 0.15);
-      L.el.style.transform = `translate3d(${m.x.toFixed(1)}px, ${m.y.toFixed(1)}px, 0)`;
+      L.g.classList.toggle('is-visible', m.facing > 0.15);
+      L.g.style.transform = `translate3d(${m.x.toFixed(1)}px, ${m.y.toFixed(1)}px, 0)`;
     }));
   } else {
     $('.homes-globe').hidden = true;
   }
 
-  if (!ink && !reel) $('.webgl-fallback').hidden = false;
+  if (!hero && !screen) $('.webgl-fallback').hidden = false;
 
   // run each canvas only while it is on screen
-  const watch = (el, api) => api && new IntersectionObserver((es) => es.forEach((e) => api.setActive(e.isIntersecting)), { rootMargin: '10% 0px' }).observe(el);
-  watch($('#hero'), ink);
-  watch($('#reel'), reel);
+  const watch = (target, api) => api && new IntersectionObserver((es) => es.forEach((e) => api.setActive(e.isIntersecting)), { rootMargin: '10% 0px' }).observe(target);
+  watch($('#hero'), hero);
+  watch($('#screen'), screen);
   watch($('.homes-globe'), homes);
   onScroll();
 
-  clearInterval(leaderTimer);
-  leaderNum.textContent = '1';
-  await wait(reduceMotion ? 0 : 350);
+  await wait(reduceMotion ? 0 : 300);
   $('#loader').classList.add('is-done');
   document.body.classList.add('is-ready');
+  // fonts and images may have shifted things while loading
+  setTimeout(layoutAll, 600);
 }
 
 // ─────────────────────────── scroll ───────────────────────────
-const bars = $$('[data-theme-bar]');
 const railLinks = $$('.rail a');
+const screenHead = $('#screen .sec-head--over');
 function onScroll() {
-  if (reel) {
-    const r = $('#reel').getBoundingClientRect();
-    reel.setProgress(-r.top / Math.max(1, r.height - innerHeight));
+  if (screen) {
+    const r = $('#screen').getBoundingClientRect();
+    const p = -r.top / Math.max(1, r.height - innerHeight);
+    screen.setProgress(p);
+    // the title steps aside as the screen unfolds across the page
+    const k = Math.max(0, Math.min(1, (p - 0.1) / 0.2));
+    screenHead.style.opacity = String(1 - k * k * (3 - 2 * k));
   }
-  // the top bar takes the colour of whatever is under it
-  const under = bars.find((el) => { const r = el.getBoundingClientRect(); return r.top <= 30 && r.bottom > 30; });
-  document.body.classList.toggle('bar-dark', !!under && under.dataset.themeBar === 'dark');
+  updateMemories();
   document.body.classList.toggle('scrolled', scrollY > innerHeight * 0.6);
-  // active section in the rail
   const c = innerHeight * 0.5;
   let active = railLinks[0];
   railLinks.forEach((a) => { const s = $(a.getAttribute('href')); if (s && s.getBoundingClientRect().top <= c) active = a; });
@@ -325,9 +546,14 @@ function onScroll() {
 }
 let queued = false;
 addEventListener('scroll', () => { if (!queued) { queued = true; requestAnimationFrame(() => { queued = false; onScroll(); }); } }, { passive: true });
-addEventListener('resize', onScroll);
+let resizeT = 0;
+addEventListener('resize', () => {
+  onScroll();
+  clearTimeout(resizeT);
+  resizeT = setTimeout(() => { layoutAll(); if (field) field.scan(); }, 150);
+});
 
-boot().catch((err) => {
+boot().then(() => field && field.scan()).catch((err) => {
   console.error(err);
   $('#loader').classList.add('is-done');
   document.body.classList.add('is-ready');
