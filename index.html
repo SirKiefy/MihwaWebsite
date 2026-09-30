@@ -15,9 +15,6 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=Gowun+Batang:wght@400;700&family=Nanum+Brush+Script&family=Noto+Serif+KR:wght@500;700;900&display=swap">
   <link rel="stylesheet" href="css/style.css">
 
-  <script type="importmap">
-    { "imports": { "three": "./vendor/three/three.module.min.js" } }
-  </script>
 </head>
 <body>
   <svg class="defs" width="0" height="0" aria-hidden="true" style="position:absolute">
@@ -241,6 +238,17 @@
   </footer>
 
   <div class="cursor" aria-hidden="true"><span class="cursor-dot"></span><span class="cursor-ring"></span></div>
+  <div class="save-sheet" id="save-sheet" role="dialog" aria-modal="true" aria-labelledby="save-hint" hidden>
+    <div class="save-card">
+      <img id="save-img" alt="">
+      <p id="save-hint" data-i18n="studio.saveHint">Your painting. Right-click or long-press it to save the image.</p>
+      <div class="save-actions">
+        <a class="save-download" id="save-download" download="mihwa-ink-painting.png" href="#" data-i18n="studio.download">Download PNG</a>
+        <button type="button" class="save-close" id="save-close" data-i18n="studio.close">Close</button>
+      </div>
+    </div>
+  </div>
+
   <p class="webgl-fallback" hidden data-i18n="fallback">Your browser could not start WebGL, so the 3D landscape is resting. Everything else still works.</p>
 
   <script type="module" src="js/main.js"></script>

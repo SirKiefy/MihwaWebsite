@@ -1,5 +1,5 @@
 // The moon that becomes the world: one sphere, two paintings.
-import * as THREE from 'three';
+import * as THREE from '../../vendor/three/three.module.min.js';
 import { NOISE } from './glsl.js';
 import { makeLandTexture } from './inktex.js';
 

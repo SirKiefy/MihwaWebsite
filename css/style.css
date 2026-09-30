@@ -36,6 +36,8 @@
 *::before,
 *::after { box-sizing: border-box; }
 
+[hidden] { display: none !important; }
+
 html {
   scroll-behavior: smooth;
   -webkit-text-size-adjust: 100%;
@@ -349,7 +351,7 @@ html[lang="ko"] h2 { font-family: var(--f-brush); font-style: normal; font-weigh
 html[lang="ko"] .eyebrow { letter-spacing: .25em; }
 
 /* reveal on scroll */
-.reveal { opacity: 0; transform: translateY(24px); filter: blur(4px); transition: opacity 1.4s var(--ease-out), transform 1.4s var(--ease-out), filter 1.4s var(--ease-out); }
+.reveal { opacity: 0.25; transform: translateY(24px); filter: blur(3px); transition: opacity 1.4s var(--ease-out), transform 1.4s var(--ease-out), filter 1.4s var(--ease-out); }
 .reveal.is-in { opacity: 1; transform: none; filter: none; }
 
 /* ─────────────────────────── Scenes (transparent over WebGL) ─────────────────────────── */
@@ -811,6 +813,33 @@ html[lang="ko"] .letter-sign { font-style: normal; }
   55% { opacity: 1; transform: rotate(-4deg) scale(.94); }
   100% { opacity: .93; transform: rotate(-4deg) scale(1); }
 }
+
+/* SAVE SHEET */
+.save-sheet {
+  position: fixed; inset: 0; z-index: 80;
+  display: grid; place-items: center;
+  padding: 24px 16px;
+  background: rgba(27, 24, 22, 0.42);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+.save-card {
+  display: grid; gap: 14px; justify-items: center;
+  width: min(760px, 100%);
+  padding: 18px;
+  background: var(--paper-light);
+  border-radius: 3px;
+  box-shadow: 0 40px 80px -30px rgba(0, 0, 0, .5);
+}
+.save-card img { width: 100%; max-height: 62vh; object-fit: contain; background: #f6efe1; box-shadow: 0 0 0 1px rgba(84,62,38,.12); }
+.save-card p { margin: 0; font-size: .95rem; color: var(--ink-2); text-align: center; }
+.save-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.save-download, .save-close {
+  display: inline-flex; align-items: center; height: 38px; padding: 0 18px;
+  border-radius: 999px; border: 1px solid var(--ink); font-size: .9rem; text-decoration: none;
+}
+.save-download { background: var(--ink); color: var(--paper-light); }
+.save-close { color: var(--ink); }
 
 /* FOOTER */
 .footer { position: relative; z-index: 2; padding: 50px var(--gutter) 60px; text-align: center; background: var(--paper); }

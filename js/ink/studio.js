@@ -249,19 +249,9 @@ export function mountStudio({ root, canvas, hint, onPaint, onTool }) {
     requestAnimationFrame(step);
   }
 
-  function save() {
-    const out = document.createElement('canvas');
-    out.width = W; out.height = H;
-    out.getContext('2d').drawImage(canvas, 0, 0);
-    out.toBlob((blob) => {
-      if (!blob) return;
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = 'mihwa-ink-painting.png';
-      document.body.appendChild(a);
-      a.click();
-      setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
-    }, 'image/png');
+  /** a PNG of the painting, as a data URL */
+  function snapshot() {
+    return canvas.toDataURL('image/png');
   }
 
   new ResizeObserver(() => resize()).observe(canvas);
@@ -272,6 +262,6 @@ export function mountStudio({ root, canvas, hint, onPaint, onTool }) {
     setSize(s) { size = s; },
     get size() { return size; },
     get tool() { return tool; },
-    clear, save,
+    clear, snapshot,
   };
 }

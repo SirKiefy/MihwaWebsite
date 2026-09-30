@@ -81,6 +81,8 @@ export const STRINGS = {
     'studio.dark': 'Dark ink', 'studio.mid': 'Mid ink', 'studio.pale': 'Pale ink',
     'studio.blossom': 'Blossom', 'studio.seal': 'Seal', 'studio.size': 'Brush size',
     'studio.clear': 'Wash away', 'studio.save': 'Save painting', 'studio.hint': 'draw here',
+    'studio.saveHint': 'Your painting. Right-click or long-press it to save the image.',
+    'studio.download': 'Download PNG', 'studio.close': 'Close',
 
     'letter.kicker': 'VI · A letter · 편지',
     'letter.title': 'For Mihwa',
@@ -134,6 +136,8 @@ export const STRINGS = {
     'studio.dark': 'Encre dense', 'studio.mid': 'Encre moyenne', 'studio.pale': 'Encre claire',
     'studio.blossom': 'Fleur', 'studio.seal': 'Sceau', 'studio.size': 'Taille du pinceau',
     'studio.clear': 'Laver', 'studio.save': 'Enregistrer', 'studio.hint': 'dessinez ici',
+    'studio.saveHint': 'Votre peinture. Faites un clic droit ou un appui long dessus pour enregistrer l’image.',
+    'studio.download': 'Télécharger en PNG', 'studio.close': 'Fermer',
 
     'letter.kicker': 'VI · Une lettre · 편지',
     'letter.title': 'Pour Mihwa',
@@ -187,6 +191,8 @@ export const STRINGS = {
     'studio.dark': '짙은 먹', 'studio.mid': '중간 먹', 'studio.pale': '옅은 먹',
     'studio.blossom': '꽃 찍기', 'studio.seal': '도장 찍기', 'studio.size': '붓 크기',
     'studio.clear': '물로 씻기', 'studio.save': '그림 저장', 'studio.hint': '여기에 그려 보세요',
+    'studio.saveHint': '당신의 그림이에요. 그림을 길게 누르거나 오른쪽 클릭해 저장하세요.',
+    'studio.download': 'PNG로 내려받기', 'studio.close': '닫기',
 
     'letter.kicker': 'VI · 편지',
     'letter.title': '미화에게',

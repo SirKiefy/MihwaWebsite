@@ -1,7 +1,7 @@
 // Shared GLSL chunks + a baked, tileable noise texture.
 // Every ink wash in the scene samples this one 256² texture instead of
 // evaluating procedural noise per pixel, which keeps phones and laptops cool.
-import * as THREE from 'three';
+import * as THREE from '../../vendor/three/three.module.min.js';
 import { rng } from '../ink/brush.js';
 
 function tileFbm(size, period, octaves, seed) {

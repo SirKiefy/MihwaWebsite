@@ -462,7 +462,24 @@ const sizeInput = $('#brush-size');
 sizeInput.addEventListener('input', () => { studio.setSize(Number(sizeInput.value)); cursor.style.setProperty('--brush', `${Number(sizeInput.value) * 1.1}px`); });
 cursor.style.setProperty('--brush', `${Number(sizeInput.value) * 1.1}px`);
 $('#studio-clear').addEventListener('click', () => { studio.clear(); phrase(1); });
-$('#studio-save').addEventListener('click', () => studio.save());
+// Saving: show the painting so it can be saved from the image itself (right-click
+// or long-press); where the page may start downloads, offer a PNG link too.
+const saveSheet = $('#save-sheet');
+const saveLink = $('#save-download');
+const framed = (() => { try { return window.self !== window.top; } catch { return true; } })();
+saveLink.hidden = framed;
+$('#studio-save').addEventListener('click', () => {
+  const url = studio.snapshot();
+  $('#save-img').src = url;
+  saveLink.href = url;
+  saveSheet.hidden = false;
+  $('#save-close').focus();
+  phrase(4);
+});
+const closeSave = () => { saveSheet.hidden = true; $('#studio-save').focus(); };
+$('#save-close').addEventListener('click', closeSave);
+saveSheet.addEventListener('click', (e) => { if (e.target === saveSheet) closeSave(); });
+addEventListener('keydown', (e) => { if (e.key === 'Escape' && !saveSheet.hidden) closeSave(); });
 const hanji = $('#hanji');
 hanji.addEventListener('pointerenter', () => cursor.classList.add('is-brush'));
 hanji.addEventListener('pointerleave', () => cursor.classList.remove('is-brush'));

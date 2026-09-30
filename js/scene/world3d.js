@@ -2,7 +2,7 @@
 //  The ink world: a Jeong Seon–style landscape in layered washes, a moon that
 //  turns into the globe, a plum branch, falling petals and a line of geese.
 // ─────────────────────────────────────────────────────────────────────────────
-import * as THREE from 'three';
+import * as THREE from '../../vendor/three/three.module.min.js';
 import { NOISE, SKY, makeNoiseTexture } from './glsl.js';
 import { Globe } from './globe.js';
 import { makePineTexture, makePavilionTexture, makeBlossomAtlas } from './inktex.js';
